@@ -1,0 +1,1256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editable Text Collision Poster</title>
+  <link rel="icon" id="favicon" type="image/png" href="../favicon/favicon-prod.png">
+  <script>
+    (function () {
+      var isDev = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:';
+      if (isDev) document.getElementById('favicon').href = '../favicon/favicon-dev.png';
+    })();
+  </script>
+  <link rel="stylesheet" href="https://use.typekit.net/xfw8hqh.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #ffffff;
+      font-family: "univers-next-pro", sans-serif;
+    }
+
+    .stage {
+      position: fixed;
+      inset: 10px;
+    }
+
+    #posterSvg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .paper {
+      fill: #ffffff;
+    }
+
+    .main-text,
+    .grid-glyph,
+    .accent-text {
+      font-family: "univers-next-pro", sans-serif;
+      letter-spacing: 0;
+      dominant-baseline: alphabetic;
+    }
+
+    .main-text,
+    .grid-glyph {
+      fill: #000;
+    }
+
+    .main-text,
+    .accent-text {
+      font-weight: 700;
+    }
+
+    .accent-text {
+      fill: #FF2D55;
+    }
+
+    .grid-glyph {
+      font-weight: 700;
+    }
+
+    .main-text {
+      cursor: grab;
+      user-select: none;
+    }
+
+    .main-text.dragging {
+      cursor: grabbing;
+    }
+
+    .hit-box,
+    .custom-hit {
+      fill: transparent;
+      cursor: grab;
+    }
+
+    .hit-box.dragging,
+    .custom-hit.dragging {
+      cursor: grabbing;
+    }
+
+    .custom-svg {
+      pointer-events: none;
+    }
+
+    .custom-svg--link.hovered rect {
+      fill: #4DACFF;
+    }
+
+    #gridMaskWords .mask-word,
+    #gridMaskWords .mask-custom {
+      fill: black;
+    }
+
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <svg id="posterSvg" viewBox="0 0 100 100" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Generated text collision poster">
+      <defs>
+        <mask id="gridMask" maskUnits="userSpaceOnUse">
+          <rect id="gridMaskBg" fill="white" width="100" height="100"/>
+          <g id="gridMaskWords"></g>
+        </mask>
+      </defs>
+      <rect id="paper" class="paper" width="100" height="100"></rect>
+      <g id="gridLayer" mask="url(#gridMask)"></g>
+      <g id="customLayer"></g>
+      <g id="mainLayer"></g>
+      <g id="accentLayer"></g>
+      <g id="hitLayer"></g>
+    </svg>
+  </main>
+
+  <script>
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const WORLD = { width: 100, height: 100 };
+    const ROTATION_FRICTION = 9.5;
+    const GRID_TEXT = "INDIGO 2026 ";
+    const GRID_LINE_HEIGHT = 1.09;
+    const GRID_REPS_DESKTOP = 7;
+    const GRID_REPS_MOBILE = 3;
+    const GRID_MOBILE_BREAKPOINT = 760;
+
+    const els = {
+      svg: document.querySelector("#posterSvg"),
+      paper: document.querySelector("#paper"),
+      gridLayer: document.querySelector("#gridLayer"),
+      gridMaskBg: document.querySelector("#gridMaskBg"),
+      gridMaskWords: document.querySelector("#gridMaskWords"),
+      customLayer: document.querySelector("#customLayer"),
+      mainLayer: document.querySelector("#mainLayer"),
+      accentLayer: document.querySelector("#accentLayer"),
+      hitLayer: document.querySelector("#hitLayer")
+    };
+
+    const measureCanvas = document.createElement("canvas");
+    const measureCtx = measureCanvas.getContext("2d");
+    const collisionCanvasA = document.createElement("canvas");
+    const collisionCanvasB = document.createElement("canvas");
+    const collisionCtxA = collisionCanvasA.getContext("2d", { willReadFrequently: true });
+    const collisionCtxB = collisionCanvasB.getContext("2d", { willReadFrequently: true });
+    const SAFE_MASK_SCALE = 4;
+    const safeZoneMaskCanvas = document.createElement("canvas");
+    safeZoneMaskCanvas.width = Math.ceil(WORLD.width * SAFE_MASK_SCALE);
+    safeZoneMaskCanvas.height = Math.ceil(WORLD.height * SAFE_MASK_SCALE);
+    const safeZoneMaskCtx = safeZoneMaskCanvas.getContext("2d", { willReadFrequently: true });
+
+    function layoutT() {
+      return Math.max(0, Math.min(1, (window.innerWidth - 393) / (1440 - 393)));
+    }
+    function lerpLayout(a, b) { const t = layoutT(); return a + (b - a) * t; }
+
+    function wordStarts() {
+      return {
+        "slop": { px: lerpLayout(0.051, 0.020), py: lerpLayout(0.175, 0.272) },
+        "till": { px: lerpLayout(0.496, 0.380), py: lerpLayout(0.288, 0.340) },
+        "you":  { px: lerpLayout(0.051, 0.020), py: lerpLayout(0.458, 0.909) },
+        "drop": { px: lerpLayout(0.102, 0.380), py: lerpLayout(0.608, 0.935) },
+      };
+    }
+
+    let wordBodies = [];
+    let accentBodies = [];
+    let customObjects = [];
+    let gridSignatureValue = "";
+    let gridCharData = [];
+    let lastContainerWidth = 0;
+    let lastContainerHeight = 0;
+    let activeBody = null;
+    let lastFrame = performance.now();
+
+    function svgEl(name, attrs = {}) {
+      const node = document.createElementNS(SVG_NS, name);
+      Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+      return node;
+    }
+
+    function clear(node) {
+      while (node.firstChild) node.removeChild(node.firstChild);
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function font(size) {
+      return `700 ${size}px "univers-next-pro", sans-serif`;
+    }
+
+    function syncWorldToContainer() {
+      const rect = els.svg.getBoundingClientRect();
+      if (!rect.width || !rect.height) return false;
+      if (
+        Math.abs(lastContainerWidth - rect.width) < 0.5 &&
+        Math.abs(lastContainerHeight - rect.height) < 0.5
+      ) {
+        return false;
+      }
+
+      lastContainerWidth = rect.width;
+      lastContainerHeight = rect.height;
+
+      const nextHeight = 100;
+      const nextWidth = Math.max(40, (rect.width / rect.height) * nextHeight);
+      const changed = (
+        Math.abs(WORLD.width - nextWidth) > 0.05 ||
+        Math.abs(WORLD.height - nextHeight) > 0.05
+      );
+
+      WORLD.width = nextWidth;
+      WORLD.height = nextHeight;
+      safeZoneMaskCanvas.width = Math.ceil(WORLD.width * SAFE_MASK_SCALE);
+      safeZoneMaskCanvas.height = Math.ceil(WORLD.height * SAFE_MASK_SCALE);
+      els.svg.setAttribute("viewBox", `0 0 ${WORLD.width.toFixed(3)} ${WORLD.height.toFixed(3)}`);
+      els.paper.setAttribute("width", WORLD.width.toFixed(3));
+      els.paper.setAttribute("height", WORLD.height.toFixed(3));
+      els.gridMaskBg.setAttribute("width", WORLD.width.toFixed(3));
+      els.gridMaskBg.setAttribute("height", WORLD.height.toFixed(3));
+
+      return changed;
+    }
+
+    function tokensFromInput() {
+      return ["Slop", "till", "You", "Drop"];
+    }
+
+    function metricsFor(text, size, spacing = 0, weight = "700") {
+      measureCtx.font = `${weight} ${size}px "univers-next-pro", sans-serif`;
+      const metrics = measureCtx.measureText(text);
+      const chars = [...text];
+      // Use full-string measureText (kerning-aware) then add custom letter-spacing on top
+      const width = Math.max(0, metrics.width + spacing * (chars.length - 1));
+      return {
+        width,
+        ascent: Number.isFinite(metrics.actualBoundingBoxAscent) && metrics.actualBoundingBoxAscent > 0 ? metrics.actualBoundingBoxAscent : size * 0.78,
+        descent: Number.isFinite(metrics.actualBoundingBoxDescent) ? metrics.actualBoundingBoxDescent : size * 0.18,
+        left: metrics.actualBoundingBoxLeft || 0,
+        right: (Number.isFinite(metrics.actualBoundingBoxRight) && metrics.actualBoundingBoxRight > 0 ? metrics.actualBoundingBoxRight : width)
+      };
+    }
+
+    function computeCharOffsets(text, size) {
+      const chars = [...text];
+      const spacing = 0;
+      measureCtx.font = font(size);
+      return chars.map((char, i) => {
+        const prefix = chars.slice(0, i).join("");
+        const startX = (prefix ? measureCtx.measureText(prefix).width : 0) + spacing * i;
+        const m = measureCtx.measureText(char);
+        return {
+          startX,
+          left: m.actualBoundingBoxLeft || 0,
+          right: m.actualBoundingBoxRight || m.width,
+          ascent: Number.isFinite(m.actualBoundingBoxAscent) && m.actualBoundingBoxAscent > 0 ? m.actualBoundingBoxAscent : size * 0.78,
+          descent: Number.isFinite(m.actualBoundingBoxDescent) ? m.actualBoundingBoxDescent : size * 0.18
+        };
+      });
+    }
+
+    function drawSpacedText(ctx, text, x, y, mode, spacing = 0) {
+      measureCtx.font = ctx.font;
+      const chars = [...text];
+
+      if (Math.abs(spacing) < 0.001) {
+        ctx[mode](text, x, y);
+        return;
+      }
+
+      // Cumulative prefix measurement gives kerning-aware positions
+      chars.forEach((char, index) => {
+        const prefix = chars.slice(0, index).join("");
+        const charX = x + (prefix.length > 0 ? measureCtx.measureText(prefix).width : 0) + spacing * index;
+        ctx[mode](char, charX, y);
+      });
+    }
+
+    function fitSize(text, maxWidth, maxHeight, maxSize) {
+      const at100 = metricsFor(text, 100).width || 100;
+      const widthSize = (maxWidth / at100) * 100;
+      return clamp(Math.min(widthSize, maxHeight, maxSize), 2, maxSize);
+    }
+
+    function bodyBox(body, pad = 0) {
+      if (body.kind === "svg") {
+        return {
+          left: body.x - pad,
+          top: body.y - pad,
+          right: body.x + body.width + pad,
+          bottom: body.y + body.height + pad,
+          width: body.width + pad * 2,
+          height: body.height + pad * 2
+        };
+      }
+
+      return {
+        left: body.x - body.metrics.left - pad,
+        top: body.y - body.metrics.ascent - pad,
+        right: body.x + body.metrics.right + pad,
+        bottom: body.y + body.metrics.descent + pad,
+        width: body.metrics.width + pad * 2,
+        height: body.metrics.ascent + body.metrics.descent + pad * 2
+      };
+    }
+
+    function bodyCenter(body) {
+      const box = bodyBox(body);
+      return {
+        x: (box.left + box.right) / 2,
+        y: (box.top + box.bottom) / 2
+      };
+    }
+
+    function rotatedBodyBounds(body, pad = 0) {
+      const box = bodyBox(body, pad);
+      const center = bodyCenter(body);
+      const angle = (body.angle || 0) * Math.PI / 180;
+      if (Math.abs(angle) < 0.001) return box;
+
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      const corners = [
+        [box.left, box.top],
+        [box.right, box.top],
+        [box.right, box.bottom],
+        [box.left, box.bottom]
+      ].map(([x, y]) => {
+        const dx = x - center.x;
+        const dy = y - center.y;
+        return {
+          x: center.x + dx * cos - dy * sin,
+          y: center.y + dx * sin + dy * cos
+        };
+      });
+      const xs = corners.map((point) => point.x);
+      const ys = corners.map((point) => point.y);
+      const left = Math.min(...xs);
+      const right = Math.max(...xs);
+      const top = Math.min(...ys);
+      const bottom = Math.max(...ys);
+      return { left, top, right, bottom, width: right - left, height: bottom - top };
+    }
+
+    function setBodyCenter(body, x, y) {
+      const center = bodyCenter(body);
+      body.x += x - center.x;
+      body.y += y - center.y;
+    }
+
+    function rotatedRectContains(pointX, pointY, body, radius) {
+      const box = bodyBox(body);
+      const center = bodyCenter(body);
+      const angle = -(body.angle || 0) * Math.PI / 180;
+      const dx = pointX - center.x;
+      const dy = pointY - center.y;
+      const localX = dx * Math.cos(angle) - dy * Math.sin(angle);
+      const localY = dx * Math.sin(angle) + dy * Math.cos(angle);
+      return (
+        Math.abs(localX) <= box.width / 2 + radius &&
+        Math.abs(localY) <= box.height / 2 + radius
+      );
+    }
+
+    function safeZoneRadius(body) {
+      const amount = 5 / 100;
+      if (body.kind === "word") return body.size * amount * (body.isAccent ? 2 : 1);
+      return Math.min(body.width, body.height) * amount * 3.6;
+    }
+
+    function updateSafeZoneMask() {
+      const w = safeZoneMaskCanvas.width;
+      const h = safeZoneMaskCanvas.height;
+      const ctx = safeZoneMaskCtx;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#fff";
+      ctx.strokeStyle = "#fff";
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.miterLimit = 2;
+      ctx.textBaseline = "alphabetic";
+      physicsBodies().forEach((body) => {
+        const radius = safeZoneRadius(body);
+        const center = bodyCenter(body);
+        ctx.save();
+        ctx.setTransform(SAFE_MASK_SCALE, 0, 0, SAFE_MASK_SCALE, 0, 0);
+        ctx.translate(center.x, center.y);
+        ctx.rotate((body.angle || 0) * Math.PI / 180);
+        ctx.translate(-center.x, -center.y);
+        if (body.kind === "word") {
+          // Match overlayTextNode: text shape + stroke of radius on each side
+          ctx.lineWidth = radius * 2;
+          ctx.font = font(body.size);
+          if (radius > 0) drawSpacedText(ctx, body.text, body.x, body.y, "strokeText");
+          drawSpacedText(ctx, body.text, body.x, body.y, "fillText");
+        } else if (body.maskCanvas && body.shape !== "circle") {
+          // Use actual pixel data (same as drawBodyMask) so safe zone hugs the real content
+          const pad = radius;
+          ctx.drawImage(body.maskCanvas, body.x - pad, body.y - pad, body.width + pad * 2, body.height + pad * 2);
+        } else {
+          // Rounded rect fallback for SVG bodies without a mask canvas
+          const pad = radius;
+          const rx = body.height / 2 + pad;
+          ctx.beginPath();
+          ctx.roundRect(body.x - pad, body.y - pad, body.width + pad * 2, body.height + pad * 2, rx);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+    }
+
+    function collisionRadius(body) {
+      const amount = 0 / 100;
+      if (body.kind === "word") return body.size * amount;
+      return Math.min(body.width, body.height) * amount;
+    }
+
+    function prepareMaskContext(ctx) {
+      ctx.fillStyle = "#fff";
+      ctx.strokeStyle = "#fff";
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.miterLimit = 2;
+      ctx.textBaseline = "alphabetic";
+    }
+
+    function drawBodyMask(ctx, body, radius, scale = 1, offsetX = 0, offsetY = 0) {
+      const center = bodyCenter(body);
+      ctx.save();
+      ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+      ctx.translate(center.x, center.y);
+      ctx.rotate((body.angle || 0) * Math.PI / 180);
+      ctx.translate(-center.x, -center.y);
+      ctx.lineWidth = radius * 2;
+
+      if (body.kind === "word") {
+        ctx.font = font(body.size);
+        if (ctx.lineWidth > 0) drawSpacedText(ctx, body.text, body.x, body.y, "strokeText");
+        drawSpacedText(ctx, body.text, body.x, body.y, "fillText");
+      } else if (body.shape === "circle") {
+        const pad = ctx.lineWidth / 2;
+        const rx = body.height / 2 + pad;
+        ctx.beginPath();
+        ctx.roundRect(body.x - pad, body.y - pad, body.width + pad * 2, body.height + pad * 2, rx);
+        ctx.fill();
+      } else if (body.maskCanvas) {
+        const pad = ctx.lineWidth / 2;
+        ctx.drawImage(body.maskCanvas, body.x - pad, body.y - pad, body.width + pad * 2, body.height + pad * 2);
+      } else {
+        if (ctx.lineWidth > 0) ctx.strokeRect(body.x, body.y, body.width, body.height);
+        ctx.fillRect(body.x, body.y, body.width, body.height);
+      }
+
+      ctx.restore();
+    }
+
+
+    function buildSvgMaskCanvas(svgUrl, onReady) {
+      const img = new Image();
+      img.onload = () => {
+        const w = img.naturalWidth || 100;
+        const h = img.naturalHeight || 100;
+        const mc = document.createElement("canvas");
+        mc.width = w;
+        mc.height = h;
+        const mctx = mc.getContext("2d");
+        mctx.drawImage(img, 0, 0, w, h);
+        const imageData = mctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] > 0) {
+            data[i] = 255; data[i + 1] = 255; data[i + 2] = 255;
+          }
+        }
+        mctx.putImageData(imageData, 0, 0);
+        onReady(mc);
+      };
+      img.src = svgUrl;
+    }
+
+    function rebuildWords(keepPositions = false) {
+      const tokens = tokensFromInput();
+      const oldWords = wordBodies;
+      const targetSize = wordTargetSize();
+      const edge = 1;
+      const band = (WORLD.height - edge * 2) / Math.max(1, tokens.length);
+      const maxAngle = rotationMaxDegrees();
+
+      clear(els.mainLayer);
+      clear(els.hitLayer);
+
+      wordBodies = tokens.map((text, index) => {
+        const size = fitSize(text, WORLD.width - edge * 2, Math.max(4, band * 0.82), targetSize);
+        const metrics = metricsFor(text, size);
+        const existing = keepPositions ? oldWords[index] : null;
+        const startPos = !existing && wordStarts()[text.toLowerCase()];
+        const x = existing ? existing.x : startPos ? startPos.px * WORLD.width : (WORLD.width - metrics.width) / 2;
+        const y = existing ? existing.y : startPos ? startPos.py * WORLD.height : edge + band * index + band * 0.68 + metrics.ascent * 0.2;
+        const mass = Math.max(1, (metrics.width * (metrics.ascent + metrics.descent)) / 95);
+        const textNode = svgEl("text", { class: "main-text" });
+        const hitNode = svgEl("rect", { class: "hit-box" });
+        const word = {
+          kind: "word",
+          text,
+          index,
+          x,
+          y,
+          vx: existing ? existing.vx : (Math.random() - 0.5) * 1.6,
+          vy: existing ? existing.vy : (Math.random() - 0.5) * 1.6,
+          angle: existing ? existing.angle : (Math.random() - 0.5) * maxAngle * 1.2,
+          av: existing ? existing.av : (Math.random() - 0.5) * 3,
+          wanderAngle: Math.random() * Math.PI * 2,
+          wanderTimer: 0.6 + Math.random() * 1.4,
+          turnPhase: Math.random() * Math.PI * 2,
+          size,
+          metrics,
+          charOffsets: computeCharOffsets(text, size),
+          mass,
+          textNode,
+          hitNode,
+          dragging: false,
+          dragDx: 0,
+          dragDy: 0,
+          lastPointerTime: performance.now()
+        };
+
+        textNode.textContent = text;
+        hitNode.addEventListener("pointerdown", (event) => startDrag(event, word));
+        textNode.addEventListener("pointerdown", (event) => startDrag(event, word));
+        els.mainLayer.appendChild(textNode);
+        els.hitLayer.appendChild(hitNode);
+        return word;
+      });
+
+      renderCustomObjects();
+      wordBodies.forEach(keepBodyInsideWorld);
+      updateBodyNodes();
+    }
+
+    function renderCustomObjects() {
+      [...els.hitLayer.querySelectorAll(".custom-hit")].forEach((node) => node.remove());
+      clear(els.customLayer);
+      customObjects.forEach((customObject) => {
+        els.customLayer.appendChild(customObject.imageNode);
+        els.hitLayer.appendChild(customObject.hitNode);
+      });
+    }
+
+    function responsiveWordSizePx() {
+      const t = Math.max(0, (window.innerWidth - 393) / (1440 - 393));
+      return 110 + (260 - 110) * t;
+    }
+
+    function wordTargetSize() {
+      const svgR = els.svg.getBoundingClientRect();
+      const base = svgR.height > 0 ? responsiveWordSizePx() / svgR.height * WORLD.height : 18.1 * WORLD.width / 100;
+      return base * (18.1 / 18.1);
+    }
+
+    function updateWordMetrics() {
+      const edge = 1;
+      wordBodies.forEach((word) => {
+        word.size = fitSize(word.text, WORLD.width - edge * 2, WORLD.height, wordTargetSize());
+        word.metrics = metricsFor(word.text, word.size);
+        word.charOffsets = computeCharOffsets(word.text, word.size);
+        word.mass = Math.max(1, (word.metrics.width * (word.metrics.ascent + word.metrics.descent)) / 95);
+      });
+    }
+
+    const ACCENT_WORDS = ["7.—9.", "oktober"];
+    function accentWordSize() {
+      const svgR = els.svg.getBoundingClientRect();
+      const t = Math.max(0, (window.innerWidth - 393) / (1440 - 393));
+      const px = 64 + (130 - 64) * t;
+      return svgR.height > 0 ? px / svgR.height * WORLD.height : 13;
+    }
+
+    function updateAccentWordMetrics() {
+      const size = accentWordSize();
+      accentBodies.forEach((word) => {
+        word.size = size;
+        word.metrics = metricsFor(word.text, size);
+        word.charOffsets = computeCharOffsets(word.text, size);
+        word.mass = Math.max(1, (word.metrics.width * (word.metrics.ascent + word.metrics.descent)) / 95);
+      });
+    }
+
+    function buildAccentWords() {
+      clear(els.accentLayer);
+      const size = accentWordSize();
+      const maxAngle = rotationMaxDegrees();
+
+      accentBodies = ACCENT_WORDS.map((text, index) => {
+        const metrics = metricsFor(text, size);
+        const x = WORLD.width * (index === 0 ? lerpLayout(0.051, 0.215) : lerpLayout(0.127, 0.441));
+        const y = WORLD.height * (index === 0 ? lerpLayout(0.762, 0.569) : lerpLayout(0.872, 0.589));
+        const mass = Math.max(1, (metrics.width * (metrics.ascent + metrics.descent)) / 95);
+        const textNode = svgEl("text", { class: "accent-text" });
+        const hitNode = svgEl("rect", { class: "hit-box" });
+        const word = {
+          kind: "word",
+          isAccent: true,
+          text,
+          index,
+          x,
+          y,
+          vx: (Math.random() - 0.5) * 1.6,
+          vy: (Math.random() - 0.5) * 1.6,
+          angle: (Math.random() - 0.5) * maxAngle * 1.2,
+          av: (Math.random() - 0.5) * 3,
+          wanderAngle: Math.random() * Math.PI * 2,
+          wanderTimer: 0.6 + Math.random() * 1.4,
+          turnPhase: Math.random() * Math.PI * 2,
+          size,
+          metrics,
+          charOffsets: computeCharOffsets(text, size),
+          mass,
+          textNode,
+          hitNode,
+          dragging: false,
+          dragDx: 0,
+          dragDy: 0,
+          lastPointerTime: performance.now()
+        };
+        textNode.textContent = text;
+        hitNode.addEventListener("pointerdown", (event) => startDrag(event, word));
+        textNode.addEventListener("pointerdown", (event) => startDrag(event, word));
+        els.accentLayer.appendChild(textNode);
+        els.hitLayer.appendChild(hitNode);
+        keepBodyInsideWorld(word);
+        return word;
+      });
+    }
+
+    function updateSvgObjectSizes() {
+      if (!customObjects.length) return;
+      const svgRect = els.svg.getBoundingClientRect();
+      if (!svgRect.height) return;
+      const t = (window.innerWidth - 393) / (1440 - 393);
+      customObjects.forEach((obj) => {
+        const px = Math.max(obj.pxMin, Math.min(obj.pxMax, obj.pxMin + (obj.pxMax - obj.pxMin) * t));
+        obj.height = px / svgRect.height * WORLD.height;
+        obj.width = obj.height * (obj.native.width / obj.native.height);
+      });
+    }
+
+    function applyWorldChange() {
+      updateSvgObjectSizes();
+      updateWordMetrics();
+      updateAccentWordMetrics();
+      wordBodies.forEach(keepBodyInsideWorld);
+      accentBodies.forEach(keepBodyInsideWorld);
+      customObjects.forEach(keepBodyInsideWorld);
+      updateBodyNodes();
+      gridSignatureValue = "";
+    }
+
+    function rotationMaxDegrees() {
+      return 0 * 0.36;
+    }
+
+    function updateBodyNodes() {
+      const maxAngle = rotationMaxDegrees();
+      wordBodies.forEach((word) => {
+        word.angle = clamp(word.angle, -maxAngle, maxAngle);
+        const box = bodyBox(word, Math.max(1, collisionRadius(word)));
+        const center = bodyCenter(word);
+        const rotate = `rotate(${word.angle.toFixed(3)} ${center.x.toFixed(3)} ${center.y.toFixed(3)})`;
+
+        word.textNode.setAttribute("x", word.x.toFixed(3));
+        word.textNode.setAttribute("y", word.y.toFixed(3));
+        word.textNode.setAttribute("font-size", word.size.toFixed(3));
+        word.textNode.setAttribute("font-family", '"univers-next-pro", sans-serif');
+        word.textNode.setAttribute("font-weight", "700");
+        word.textNode.setAttribute("letter-spacing", "0");
+        word.textNode.setAttribute("transform", rotate);
+        word.textNode.classList.toggle("dragging", word.dragging);
+
+        word.hitNode.setAttribute("x", box.left.toFixed(3));
+        word.hitNode.setAttribute("y", box.top.toFixed(3));
+        word.hitNode.setAttribute("width", box.width.toFixed(3));
+        word.hitNode.setAttribute("height", box.height.toFixed(3));
+        word.hitNode.setAttribute("transform", rotate);
+        word.hitNode.classList.toggle("dragging", word.dragging);
+
+      });
+
+      accentBodies.forEach((word) => {
+        word.angle = clamp(word.angle, -maxAngle, maxAngle);
+        const box = bodyBox(word, Math.max(1, collisionRadius(word)));
+        const center = bodyCenter(word);
+        const rotate = `rotate(${word.angle.toFixed(3)} ${center.x.toFixed(3)} ${center.y.toFixed(3)})`;
+
+        word.textNode.setAttribute("x", word.x.toFixed(3));
+        word.textNode.setAttribute("y", word.y.toFixed(3));
+        word.textNode.setAttribute("font-size", word.size.toFixed(3));
+        word.textNode.setAttribute("font-family", '"univers-next-pro", sans-serif');
+        word.textNode.setAttribute("letter-spacing", "0");
+        word.textNode.setAttribute("transform", rotate);
+        word.textNode.classList.toggle("dragging", word.dragging);
+
+        word.hitNode.setAttribute("x", box.left.toFixed(3));
+        word.hitNode.setAttribute("y", box.top.toFixed(3));
+        word.hitNode.setAttribute("width", box.width.toFixed(3));
+        word.hitNode.setAttribute("height", box.height.toFixed(3));
+        word.hitNode.setAttribute("transform", rotate);
+        word.hitNode.classList.toggle("dragging", word.dragging);
+      });
+
+      customObjects.forEach((object) => {
+        const center = bodyCenter(object);
+
+        const rotate = `rotate(${object.angle.toFixed(3)} ${center.x.toFixed(3)} ${center.y.toFixed(3)})`;
+        if (object.native) {
+          const sx = object.width / object.native.width;
+          const sy = object.height / object.native.height;
+          object.imageNode.setAttribute("transform",
+            `${rotate} translate(${object.x.toFixed(3)},${object.y.toFixed(3)}) scale(${sx.toFixed(6)},${sy.toFixed(6)})`
+          );
+        } else {
+          object.imageNode.setAttribute("x", object.x.toFixed(3));
+          object.imageNode.setAttribute("y", object.y.toFixed(3));
+          object.imageNode.setAttribute("width", object.width.toFixed(3));
+          object.imageNode.setAttribute("height", object.height.toFixed(3));
+          object.imageNode.setAttribute("transform", rotate);
+        }
+        object.hitNode.setAttribute("x", object.x.toFixed(3));
+        object.hitNode.setAttribute("y", object.y.toFixed(3));
+        object.hitNode.setAttribute("width", object.width.toFixed(3));
+        object.hitNode.setAttribute("height", object.height.toFixed(3));
+        object.hitNode.setAttribute("transform", rotate);
+        object.hitNode.classList.toggle("dragging", object.dragging);
+      });
+    }
+
+    function gridReps() {
+      return window.innerWidth <= GRID_MOBILE_BREAKPOINT ? GRID_REPS_MOBILE : GRID_REPS_DESKTOP;
+    }
+
+    function gridSignature() {
+      return [
+        gridReps(),
+        WORLD.width.toFixed(2),
+        WORLD.height.toFixed(2)
+      ].join("|");
+    }
+
+    function rebuildGrid() {
+      clear(els.gridLayer);
+      gridCharData = [];
+
+      const reps = gridReps();
+      // Initial size estimate: measure pitch at 100px using individual chars (no kerning,
+      // matching the placement loop) then scale to fit reps phrases in WORLD.width.
+      measureCtx.font = `700 100px ${'"univers-next-pro", sans-serif'}`;
+      const ref100Pitch = [...GRID_TEXT].reduce((acc, ch) => acc + measureCtx.measureText(ch).width - 1, 0);
+      let size = ref100Pitch > 0 ? (WORLD.width * 100) / (ref100Pitch * reps) : 3;
+      // Correct for font-hinting drift: measure actual pitch at the estimated size and
+      // rescale so reps * actualPitch = WORLD.width exactly.
+      measureCtx.font = `700 ${size}px ${'"univers-next-pro", sans-serif'}`;
+      const pitchAtSize = [...GRID_TEXT].reduce((acc, ch) => acc + measureCtx.measureText(ch).width + (-0.01 * size), 0);
+      if (pitchAtSize > 0) size = size * (WORLD.width / reps) / pitchAtSize;
+      const spacing = -0.01 * size;
+
+      const metrics = metricsFor(GRID_TEXT, size, spacing, "700");
+      const phraseWidth = metrics.width;
+      const cellH = size * GRID_LINE_HEIGHT;
+      const glyphH = metrics.ascent + metrics.descent;
+      const rows = Math.max(0, Math.floor((WORLD.height - glyphH) / cellH) + 1);
+      const repsNeeded = reps;
+      const rowContent = GRID_TEXT.repeat(repsNeeded);
+      const fragment = document.createDocumentFragment();
+
+      measureCtx.font = `700 ${size}px ${'"univers-next-pro", sans-serif'}`;
+      const halfAscent = metrics.ascent / 2;
+      let charX = 0;
+      const row0Chars = [];
+
+      for (let i = 0; i < rowContent.length; i++) {
+        const cw = measureCtx.measureText(rowContent[i]).width;
+        row0Chars.push({ cx: charX + cw / 2, startX: charX, cw });
+        charX += cw + spacing;
+      }
+
+      const gridTopOffset = size * 0.08;
+      for (let row = 0; row < rows; row += 1) {
+        const y = gridTopOffset + row * cellH + metrics.ascent;
+        const cy = y - halfAscent;
+        const node = svgEl("text", {
+          class: "grid-glyph",
+          "font-size": size.toFixed(3),
+          "font-family": '"univers-next-pro", sans-serif',
+          "font-weight": "700",
+          x: "0",
+          y: y.toFixed(3)
+        });
+        for (let i = 0; i < rowContent.length; i++) {
+          const tspan = document.createElementNS(SVG_NS, "tspan");
+          tspan.textContent = rowContent[i];
+          tspan.setAttribute("x", row0Chars[i].startX.toFixed(3));
+          node.appendChild(tspan);
+          gridCharData.push({ tspan, x: row0Chars[i].cx, y: cy, hw: row0Chars[i].cw / 2, hh: halfAscent, hidden: false });
+        }
+        fragment.appendChild(node);
+      }
+
+      els.gridLayer.appendChild(fragment);
+      gridSignatureValue = gridSignature();
+    }
+
+    function updateGridCharVisibility() {
+      if (!gridCharData.length) return;
+      updateSafeZoneMask();
+      const w = safeZoneMaskCanvas.width;
+      const h = safeZoneMaskCanvas.height;
+      const pixels = safeZoneMaskCtx.getImageData(0, 0, w, h).data;
+      for (const char of gridCharData) {
+        const cx = char.x * SAFE_MASK_SCALE;
+        const cy = char.y * SAFE_MASK_SCALE;
+        const hw = char.hw * SAFE_MASK_SCALE;
+        const hh = char.hh * SAFE_MASK_SCALE;
+        const samples = [
+          [cx, cy],
+          [cx - hw, cy],
+          [cx + hw, cy],
+          [cx, cy - hh],
+          [cx, cy + hh]
+        ];
+        const hidden = samples.some(([sx, sy]) => {
+          const ix = Math.round(sx);
+          const iy = Math.round(sy);
+          return ix >= 0 && iy >= 0 && ix < w && iy < h
+            && pixels[(iy * w + ix) * 4 + 3] > 18;
+        });
+        if (hidden !== char.hidden) {
+          char.hidden = hidden;
+          char.tspan.style.visibility = hidden ? "hidden" : "";
+        }
+      }
+    }
+
+    function layoutGrid() {
+      if (gridSignatureValue !== gridSignature()) rebuildGrid();
+      updateGridCharVisibility();
+    }
+
+    function physicsBodies() {
+      return wordBodies.concat(accentBodies, customObjects);
+    }
+
+    function clampBodySpeed(body) {
+      const maxSpeed = 70;
+      const speed = Math.hypot(body.vx || 0, body.vy || 0);
+      if (speed <= maxSpeed) return;
+      body.vx = ((body.vx || 0) / speed) * maxSpeed;
+      body.vy = ((body.vy || 0) / speed) * maxSpeed;
+    }
+
+    function keepBodyInsideWorld(body) {
+      const edge = 1;
+      const bounce = 50 / 100;
+      const box = rotatedBodyBounds(body, collisionRadius(body));
+
+      if (box.left < edge) {
+        body.x += edge - box.left;
+        body.vx = Math.abs(body.vx || 0) * bounce;
+      }
+      if (box.right > WORLD.width - edge) {
+        body.x -= box.right - (WORLD.width - edge);
+        body.vx = -Math.abs(body.vx || 0) * bounce;
+      }
+      if (box.top < edge) {
+        body.y += edge - box.top;
+        body.vy = Math.abs(body.vy || 0) * bounce;
+      }
+      if (box.bottom > WORLD.height - edge) {
+        body.y -= box.bottom - (WORLD.height - edge);
+        body.vy = -Math.abs(body.vy || 0) * bounce;
+      }
+    }
+
+    function resizeCollisionCanvas(width, height) {
+      if (collisionCanvasA.width !== width || collisionCanvasA.height !== height) {
+        collisionCanvasA.width = width;
+        collisionCanvasA.height = height;
+      }
+      if (collisionCanvasB.width !== width || collisionCanvasB.height !== height) {
+        collisionCanvasB.width = width;
+        collisionCanvasB.height = height;
+      }
+    }
+
+    function maskedCollision(a, b) {
+      const radiusA = collisionRadius(a);
+      const radiusB = collisionRadius(b);
+      const aBox = rotatedBodyBounds(a, radiusA);
+      const bBox = rotatedBodyBounds(b, radiusB);
+
+      if (
+        aBox.right <= bBox.left ||
+        aBox.left >= bBox.right ||
+        aBox.bottom <= bBox.top ||
+        aBox.top >= bBox.bottom
+      ) {
+        return null;
+      }
+
+      const unionLeft = Math.min(aBox.left, bBox.left) - 0.35;
+      const unionTop = Math.min(aBox.top, bBox.top) - 0.35;
+      const unionRight = Math.max(aBox.right, bBox.right) + 0.35;
+      const unionBottom = Math.max(aBox.bottom, bBox.bottom) + 0.35;
+      const unionWidth = Math.max(0.1, unionRight - unionLeft);
+      const unionHeight = Math.max(0.1, unionBottom - unionTop);
+      const scale = clamp(300 / Math.max(unionWidth, unionHeight), 2.6, 6);
+      const width = Math.max(2, Math.ceil(unionWidth * scale));
+      const height = Math.max(2, Math.ceil(unionHeight * scale));
+
+      if (width * height > 180000) return null;
+
+      resizeCollisionCanvas(width, height);
+      collisionCtxA.setTransform(1, 0, 0, 1, 0, 0);
+      collisionCtxB.setTransform(1, 0, 0, 1, 0, 0);
+      collisionCtxA.clearRect(0, 0, width, height);
+      collisionCtxB.clearRect(0, 0, width, height);
+      prepareMaskContext(collisionCtxA);
+      prepareMaskContext(collisionCtxB);
+
+      const offsetX = -unionLeft * scale;
+      const offsetY = -unionTop * scale;
+      drawBodyMask(collisionCtxA, a, radiusA, scale, offsetX, offsetY);
+      drawBodyMask(collisionCtxB, b, radiusB, scale, offsetX, offsetY);
+
+      const pixelsA = collisionCtxA.getImageData(0, 0, width, height).data;
+      const pixelsB = collisionCtxB.getImageData(0, 0, width, height).data;
+      const stride = width * height > 60000 ? 2 : 1;
+      let hits = 0;
+      let sumX = 0;
+      let sumY = 0;
+
+      for (let y = 0; y < height; y += stride) {
+        for (let x = 0; x < width; x += stride) {
+          const index = (y * width + x) * 4 + 3;
+          if (pixelsA[index] > 18 && pixelsB[index] > 18) {
+            hits += 1;
+            sumX += x;
+            sumY += y;
+          }
+        }
+      }
+
+      if (!hits) return null;
+
+      const aCenter = bodyCenter(a);
+      const bCenter = bodyCenter(b);
+      const contactX = unionLeft + (sumX / hits) / scale;
+      const contactY = unionTop + (sumY / hits) / scale;
+
+      // Ellipse surface normal: weight the contact displacement from b's center
+      // by 1/halfDim² per axis. For wide/flat bodies (SVG) this strongly suppresses
+      // the horizontal component so a hit on the flat top produces a vertical normal
+      // rather than a diagonal pointing toward the distant center.
+      const bBox0 = bodyBox(b, 0);
+      const bHalfW = bBox0.width / 2 || 1;
+      const bHalfH = bBox0.height / 2 || 1;
+      const dxFromB = contactX - bCenter.x;
+      const dyFromB = contactY - bCenter.y;
+      let nx = -(dxFromB / (bHalfW * bHalfW));
+      let ny = -(dyFromB / (bHalfH * bHalfH));
+      const len = Math.hypot(nx, ny) || 1;
+      nx /= len;
+      ny /= len;
+
+      // Ensure the normal is in the same half-space as a→b so impulse signs are correct.
+      const c2cX = bCenter.x - aCenter.x;
+      const c2cY = bCenter.y - aCenter.y;
+      if (nx * c2cX + ny * c2cY < 0) { nx = -nx; ny = -ny; }
+
+      const contactDistance = Math.hypot(contactX - aCenter.x, contactY - aCenter.y);
+      const penetration = clamp(Math.sqrt(hits) * stride / scale * 0.18 + contactDistance * 0.002, 0.08, 3.6);
+      return { nx, ny, penetration };
+    }
+
+    function resolveWordCollision(a, b) {
+      const collision = maskedCollision(a, b);
+      if (!collision) return;
+      const { nx, ny, penetration } = collision;
+
+      const invA = a.dragging ? 0 : 1 / a.mass;
+      const invB = b.dragging ? 0 : 1 / b.mass;
+      const invSum = invA + invB;
+      if (invSum === 0) return;
+
+      // Baumgarte-style slop: ignore tiny penetrations, correct only 45% of the remainder
+      const slop = 0.08;
+      const correctionMag = Math.max(0, penetration - slop) * 0.45;
+      a.x -= nx * correctionMag * (invA / invSum);
+      a.y -= ny * correctionMag * (invA / invSum);
+      b.x += nx * correctionMag * (invB / invSum);
+      b.y += ny * correctionMag * (invB / invSum);
+
+      const relativeVx = (b.vx || 0) - (a.vx || 0);
+      const relativeVy = (b.vy || 0) - (a.vy || 0);
+      const velocityAlongNormal = relativeVx * nx + relativeVy * ny;
+      const isDrivenContact = a.dragging || b.dragging;
+      if (velocityAlongNormal > 0 && !isDrivenContact) return;
+
+      const bounce = 50 / 100;
+      const closingSpeed = Math.max(0, -velocityAlongNormal);
+      const aVelocityN = (a.vx || 0) * nx + (a.vy || 0) * ny;
+      const bVelocityN = (b.vx || 0) * nx + (b.vy || 0) * ny;
+      const drivenSpeed = Math.max(
+        a.dragging ? aVelocityN : 0,
+        b.dragging ? -bVelocityN : 0,
+        0
+      );
+      // Only boost velocity for significant overlaps to avoid jitter at rest contacts
+      const overlapBoost = isDrivenContact ? Math.min(26, penetration * 8) : Math.min(3, Math.max(0, penetration - slop) * 1.2);
+      const hitSpeed = Math.max(closingSpeed, drivenSpeed, overlapBoost);
+      const impulse = ((1 + bounce) * hitSpeed + overlapBoost) / invSum;
+      a.vx -= impulse * invA * nx;
+      a.vy -= impulse * invA * ny;
+      b.vx += impulse * invB * nx;
+      b.vy += impulse * invB * ny;
+      a.av += impulse * invA * 0.04 * (ny || -nx);
+      b.av -= impulse * invB * 0.04 * (ny || -nx);
+      clampBodySpeed(a);
+      clampBodySpeed(b);
+    }
+
+    function applyFloat(word, dt) {
+      if (word.dragging) return;
+      const strength = 6;
+      const targetSpeed = 6;
+      if (strength <= 0 || targetSpeed <= 0) return;
+
+      word.wanderTimer -= dt;
+      if (word.wanderTimer <= 0) {
+        word.wanderTimer = 1.1 + Math.random() * 2.2;
+        word.wanderAngle += (Math.random() - 0.5) * Math.PI * 1.4;
+      }
+
+      const speed = Math.hypot(word.vx, word.vy);
+      const influence = clamp(1 - speed / Math.max(targetSpeed * 2.8, 0.1), 0, 1);
+      const acceleration = strength * (0.08 + targetSpeed * 0.018) * influence;
+      word.vx += Math.cos(word.wanderAngle) * acceleration * dt;
+      word.vy += Math.sin(word.wanderAngle) * acceleration * dt;
+    }
+
+    function applyRotation(word, dt, now) {
+      const maxAngle = rotationMaxDegrees();
+      const rotationFloat = 0;
+      if (maxAngle <= 0) {
+        word.angle = 0;
+        word.av = 0;
+        return;
+      }
+
+      const wave = Math.sin(now * 0.00018 + word.turnPhase);
+      word.av += wave * maxAngle * rotationFloat * dt * 0.006;
+      word.av *= Math.exp(-ROTATION_FRICTION * dt);
+      word.angle += word.av * dt;
+
+      if (word.angle > maxAngle || word.angle < -maxAngle) {
+        word.av += (clamp(word.angle, -maxAngle, maxAngle) - word.angle) * dt * 9;
+        word.angle = clamp(word.angle, -maxAngle, maxAngle);
+      }
+    }
+
+    function solvePhysics(dt, now) {
+      const damping = Math.exp(-0 * dt);
+      const bodies = physicsBodies();
+
+      bodies.forEach((body) => {
+        applyFloat(body, dt);
+        applyRotation(body, dt, now);
+      });
+      bodies.forEach((body) => {
+        if (body.dragging) return;
+        body.x += (body.vx || 0) * dt;
+        body.y += (body.vy || 0) * dt;
+        body.vx = (body.vx || 0) * damping;
+        body.vy = (body.vy || 0) * damping;
+        clampBodySpeed(body);
+      });
+
+      const iterations = bodies.length > 10 ? 1 : bodies.length > 6 ? 2 : 3;
+      for (let iteration = 0; iteration < iterations; iteration += 1) {
+        for (let i = 0; i < bodies.length; i += 1) {
+          for (let j = i + 1; j < bodies.length; j += 1) {
+            resolveWordCollision(bodies[i], bodies[j]);
+          }
+        }
+        bodies.forEach(keepBodyInsideWorld);
+      }
+    }
+
+    function pointerToWorld(event) {
+      const point = els.svg.createSVGPoint();
+      point.x = event.clientX;
+      point.y = event.clientY;
+      return point.matrixTransform(els.svg.getScreenCTM().inverse());
+    }
+
+    function startDrag(event, body) {
+      if (event.pointerType === 'touch') return;
+      event.preventDefault();
+      event.stopPropagation();
+      const point = pointerToWorld(event);
+      activeBody = body;
+      body.dragging = true;
+      body.dragDx = point.x - body.x;
+      body.dragDy = point.y - body.y;
+      body.lastPointerTime = performance.now();
+      body.vx = 0;
+      body.vy = 0;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      updateBodyNodes();
+    }
+
+    function moveDrag(event) {
+      if (!activeBody) return;
+      const point = pointerToWorld(event);
+      const now = performance.now();
+      const dt = Math.max(0.016, (now - activeBody.lastPointerTime) / 1000);
+      const nextX = point.x - activeBody.dragDx;
+      const nextY = point.y - activeBody.dragDy;
+      activeBody.vx = (nextX - activeBody.x) / dt;
+      activeBody.vy = (nextY - activeBody.y) / dt;
+      activeBody.x = nextX;
+      activeBody.y = nextY;
+      activeBody.lastPointerTime = now;
+      keepBodyInsideWorld(activeBody);
+      solvePhysics(0.016, now);
+      updateBodyNodes();
+    }
+
+    function endDrag() {
+      if (!activeBody) return;
+      activeBody.dragging = false;
+      activeBody = null;
+      updateBodyNodes();
+    }
+
+    function animate(now) {
+      const worldChanged = syncWorldToContainer();
+      if (worldChanged) applyWorldChange();
+      const dt = Math.min(0.033, (now - lastFrame) / 1000);
+      lastFrame = now;
+      solvePhysics(dt, now);
+      layoutGrid();
+      updateBodyNodes();
+      requestAnimationFrame(animate);
+    }
+
+    document.addEventListener("pointermove", moveDrag);
+    document.addEventListener("pointerup", endDrag);
+    document.addEventListener("pointercancel", endDrag);
+
+    function loadInlineSvg() {
+      const svgDefs = [];
+
+      const svgRect = els.svg.getBoundingClientRect();
+
+      function responsiveHeightPx(def) {
+        const t = (window.innerWidth - 393) / (1440 - 393);
+        return Math.max(def.pxMin, def.pxMin + (def.pxMax - def.pxMin) * t);
+      }
+
+      customObjects = svgDefs.map((def) => {
+        const objHeight = svgRect.height > 0 ? responsiveHeightPx(def) / svgRect.height * WORLD.height : 12;
+        const objWidth = objHeight * (def.nativeW / def.nativeH);
+        const parsed = new DOMParser().parseFromString(def.content, "image/svg+xml");
+        const group = document.createElementNS(SVG_NS, "g");
+        group.setAttribute("class", "custom-svg");
+        [...parsed.documentElement.childNodes].forEach((child) => {
+          group.appendChild(document.importNode(child, true));
+        });
+
+        const object = {
+          kind: "svg",
+          native: { width: def.nativeW, height: def.nativeH },
+          shape: def.shape,
+          pxMin: def.pxMin, pxMax: def.pxMax,
+          x: def.px * WORLD.width,
+          y: def.py * WORLD.height,
+          width: objWidth,
+          height: objHeight,
+          vx: (Math.random() - 0.5) * 1.6,
+          vy: (Math.random() - 0.5) * 1.6,
+          angle: 0, av: 0,
+          wanderAngle: Math.random() * Math.PI * 2,
+          wanderTimer: 0.6 + Math.random() * 1.4,
+          turnPhase: Math.random() * Math.PI * 2,
+          mass: 12,
+          dragging: false, dragDx: 0, dragDy: 0,
+          imageNode: group,
+          hitNode: svgEl("rect", { class: "custom-hit" })
+        };
+
+        object.hitNode.addEventListener("pointerdown", (e) => startDrag(e, object));
+        if (def.href) {
+          group.classList.add("custom-svg--link");
+          object.hitNode.style.cursor = "pointer";
+          let downX, downY;
+          object.hitNode.addEventListener("pointerdown", (e) => { downX = e.clientX; downY = e.clientY; });
+          object.hitNode.addEventListener("pointerup", (e) => {
+            if (Math.hypot(e.clientX - downX, e.clientY - downY) < 8) window.open(def.href, "_blank");
+          });
+          object.hitNode.addEventListener("pointerenter", () => group.classList.add("hovered"));
+          object.hitNode.addEventListener("pointerleave", () => group.classList.remove("hovered"));
+        }
+        const svgBlob = new Blob([def.content], { type: "image/svg+xml" });
+        const svgBlobUrl = URL.createObjectURL(svgBlob);
+        buildSvgMaskCanvas(svgBlobUrl, (mc) => {
+          object.maskCanvas = mc;
+          object.maskDataUrl = mc.toDataURL();
+          URL.revokeObjectURL(svgBlobUrl);
+        });
+
+        return object;
+      });
+
+      renderCustomObjects();
+      updateBodyNodes();
+      layoutGrid();
+    }
+
+    syncWorldToContainer();
+    rebuildGrid();
+    rebuildWords(false);
+    buildAccentWords();
+    requestAnimationFrame(animate);
+    loadInlineSvg();
+
+    document.fonts.ready.then(() => {
+      updateWordMetrics();
+      updateAccentWordMetrics();
+      wordBodies.forEach(keepBodyInsideWorld);
+      accentBodies.forEach(keepBodyInsideWorld);
+      gridSignatureValue = "";
+      updateBodyNodes();
+    });
+  </script>
+</body>
+</html>
