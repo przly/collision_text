@@ -103,9 +103,454 @@
       fill: black;
     }
 
+    .panel-toggle {
+      position: fixed;
+      z-index: 6;
+      top: 16px;
+      left: 16px;
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid #FF2D55;
+      border-radius: 8px;
+      background: #FF2D55;
+      color: #fff;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 10px 28px rgb(0 0 0 / 10%);
+      transition: background 150ms ease, color 150ms ease, transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .panel-toggle.is-pressed {
+      transform: scale(0.94);
+    }
+
+    .control-panel {
+      position: fixed;
+      z-index: 5;
+      top: 70px;
+      left: 16px;
+      bottom: 16px;
+      width: min(340px, calc(84vw - 32px));
+      overflow: auto;
+      padding: 24px;
+      background: rgb(255 255 255 / 94%);
+      border: 1px solid #d8d6d0;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgb(0 0 0 / 12%);
+      backdrop-filter: blur(18px);
+      color: #111;
+      font-family: "univers-next-pro", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      transform-origin: top left;
+      transform: translateX(0) scale(1);
+      filter: blur(0);
+      /* Opening: critically damped spring, no overshoot */
+      transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 200ms ease-out,
+                  filter 220ms ease-out;
+    }
+
+    .control-panel h2 {
+      margin: 0 0 16px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .control-panel .group {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid #d8d6d0;
+    }
+
+    .control-panel .group:first-of-type {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .control-panel .group h3 {
+      margin: 0 0 14px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #111;
+    }
+
+    .control-panel .group h3.h3-accent {
+      color: #FF2D55;
+    }
+
+    .control-panel p {
+      margin: 0 0 14px;
+      color: #333;
+    }
+
+    .control-panel .field {
+      margin: 0 0 14px;
+    }
+
+    .control-panel label {
+      display: block;
+      margin: 0 0 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #666;
+    }
+
+    .control-panel .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: #111;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .control-panel .checkbox-label input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #FF2D55;
+      cursor: pointer;
+    }
+
+    .control-panel input[type="text"],
+    .control-panel textarea {
+      width: 100%;
+      min-height: 38px;
+      padding: 8px 12px;
+      border: 1px solid #d8d6d0;
+      border-radius: 8px;
+      background: #fff;
+      color: #111;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.3;
+      outline: none;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    .control-panel textarea {
+      resize: vertical;
+      overflow: auto;
+    }
+
+    .control-panel input[type="text"]:focus,
+    .control-panel textarea:focus {
+      border-color: #FF2D55;
+      box-shadow: 0 0 0 3px rgb(255 45 85 / 18%);
+    }
+
+    .control-panel .label-accent {
+      color: #FF2D55;
+    }
+
+    .control-panel .input-accent {
+      color: #FF2D55;
+      border-color: rgb(255 45 85 / 40%);
+    }
+
+    .control-panel input[type="range"] {
+      width: 100%;
+      accent-color: #FF2D55;
+    }
+
+    .control-panel label span {
+      color: #111;
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    .control-panel .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .control-panel .file-input-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .control-panel .upload-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .control-panel .upload-thumb {
+      flex: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      border: 1px solid #d8d6d0;
+      background-color: #E5E5E5;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .control-panel .upload-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control-panel .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      align-self: flex-start;
+      min-height: 30px;
+      padding: 0 14px;
+      border: 1px solid #111;
+      border-radius: 8px;
+      background: #111;
+      color: #fff;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 150ms ease, transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .control-panel .upload-btn:hover {
+      background: #333;
+    }
+
+    .control-panel .upload-btn:active {
+      transform: scale(0.96);
+    }
+
+    .control-panel .file-input-hidden:focus-visible + .upload-info .upload-btn {
+      outline: 2px solid #FF2D55;
+      outline-offset: 2px;
+    }
+
+    .control-panel .upload-filename {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .control-panel .size-number {
+      flex: none;
+      width: 60px;
+      min-height: 30px;
+      padding: 0 8px;
+      border: 1px solid #d8d6d0;
+      border-radius: 8px;
+      background: #fff;
+      color: #111;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      outline: none;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    .control-panel .size-number:focus {
+      border-color: #FF2D55;
+      box-shadow: 0 0 0 3px rgb(255 45 85 / 18%);
+    }
+
+    .control-panel .reset-btn {
+      flex: none;
+      min-height: 30px;
+      padding: 0 12px;
+      border: 1px solid #d8d6d0;
+      border-radius: 8px;
+      background: #fff;
+      color: #111;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color 150ms ease, background 150ms ease, transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .control-panel .reset-btn:hover {
+      border-color: #FF2D55;
+    }
+
+    .control-panel .reset-btn:active {
+      transform: scale(0.94);
+    }
+
+    .control-panel .label-accent span {
+      color: #FF2D55;
+    }
+
+    body.panel-hidden .control-panel {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-120%) scale(0.96);
+      filter: blur(6px);
+      /* Closing: quicker, no overshoot, mirrors the entry path */
+      transition: transform 190ms cubic-bezier(0.4, 0, 1, 1),
+                  opacity 140ms ease-in,
+                  filter 160ms ease-in;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .control-panel {
+        transform: none;
+        filter: none;
+        transition: opacity 160ms ease;
+      }
+
+      body.panel-hidden .control-panel {
+        transform: none;
+        filter: none;
+        transition: opacity 160ms ease;
+      }
+
+      .panel-toggle,
+      .panel-toggle.is-pressed {
+        transform: none;
+        transition: background 150ms ease, color 150ms ease;
+      }
+    }
+
   </style>
 </head>
-<body>
+<body class="panel-hidden">
+  <script>
+    try {
+      if (localStorage.getItem("toolPanelHidden") === "false") {
+        document.body.classList.remove("panel-hidden");
+      }
+    } catch (e) {}
+  </script>
+  <button id="panelToggle" class="panel-toggle" type="button" aria-expanded="false" aria-controls="controlPanel">Show Panel</button>
+  <aside id="controlPanel" class="control-panel">
+    <div class="group">
+      <h3>Words</h3>
+      <div class="field">
+        <label for="wordInput0">Word 1</label>
+        <textarea id="wordInput0" class="word-input" rows="2" autocomplete="off" spellcheck="false">Spike Art
+Magazine</textarea>
+      </div>
+      <div class="field">
+        <label for="wordInput1">Word 2</label>
+        <textarea id="wordInput1" class="word-input" rows="1" autocomplete="off" spellcheck="false"></textarea>
+      </div>
+      <div class="field">
+        <label for="wordInput2">Word 3</label>
+        <textarea id="wordInput2" class="word-input" rows="1" autocomplete="off" spellcheck="false"></textarea>
+      </div>
+      <div class="field">
+        <label for="mainSizeSlider">Word Size</label>
+        <div class="row">
+          <input id="mainSizeSlider" type="range" min="60" max="320" step="1" value="237">
+          <input id="mainSizeNumber" class="size-number" type="number" min="60" max="320" step="1" value="237">
+          <button id="mainSizeReset" class="reset-btn" type="button">Reset</button>
+        </div>
+      </div>
+    </div>
+    <div class="group">
+      <h3 class="h3-accent">Accent</h3>
+      <div class="field">
+        <label for="accentInput0" class="label-accent">Accent 1</label>
+        <textarea id="accentInput0" class="accent-input input-accent" rows="1" autocomplete="off" spellcheck="false">7.—9.</textarea>
+      </div>
+      <div class="field">
+        <label for="accentInput1" class="label-accent">Accent 2</label>
+        <textarea id="accentInput1" class="accent-input input-accent" rows="1" autocomplete="off" spellcheck="false">oktober</textarea>
+      </div>
+      <div class="field">
+        <label for="accentSizeSlider" class="label-accent">Accent Size</label>
+        <div class="row">
+          <input id="accentSizeSlider" type="range" min="30" max="160" step="1" value="120">
+          <input id="accentSizeNumber" class="size-number input-accent" type="number" min="30" max="160" step="1" value="120">
+          <button id="accentSizeReset" class="reset-btn" type="button">Reset</button>
+        </div>
+      </div>
+    </div>
+    <div class="group">
+      <h3>Rectangle</h3>
+      <div class="field">
+        <label for="rectImageInput">Image</label>
+        <div class="upload-control">
+          <div id="rectImageThumb" class="upload-thumb"></div>
+          <div class="upload-info">
+            <label for="rectImageInput" class="upload-btn">Choose Image</label>
+            <span id="rectImageFilename" class="upload-filename">No image</span>
+          </div>
+          <input id="rectImageInput" type="file" accept="image/*" class="file-input-hidden">
+          <button id="rectImageReset" class="reset-btn" type="button">Clear</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="checkbox-label">
+          <input id="rectSnapSquare" type="checkbox">
+          Snap to Rectangle
+        </label>
+      </div>
+      <div class="field">
+        <label for="rectSizeSlider">Size</label>
+        <div class="row">
+          <input id="rectSizeSlider" type="range" min="250" max="750" step="1" value="300">
+          <input id="rectSizeNumber" class="size-number" type="number" min="250" max="750" step="1" value="300">
+          <button id="rectSizeReset" class="reset-btn" type="button">Reset</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="rectRadiusSlider">Corner Radius</label>
+        <div class="row">
+          <input id="rectRadiusSlider" type="range" min="0" max="150" step="1" value="26">
+          <input id="rectRadiusNumber" class="size-number" type="number" min="0" max="150" step="1" value="26">
+          <button id="rectRadiusReset" class="reset-btn" type="button">Reset</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="rectRotation">Rotation <span id="rectRotationValue">15°</span></label>
+        <div class="row">
+          <input id="rectRotation" type="range" min="-20" max="20" step="1" value="15">
+          <button id="rectRotationReset" class="reset-btn" type="button">Reset</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <script>
+    (function () {
+      const btn = document.getElementById("panelToggle");
+
+      const hiddenNow = document.body.classList.contains("panel-hidden");
+      btn.setAttribute("aria-expanded", String(!hiddenNow));
+      btn.textContent = hiddenNow ? "Show Panel" : "Hide Panel";
+
+      btn.addEventListener("pointerdown", () => btn.classList.add("is-pressed"));
+      ["pointerup", "pointercancel", "pointerleave"].forEach((type) => {
+        btn.addEventListener(type, () => btn.classList.remove("is-pressed"));
+      });
+
+      btn.addEventListener("click", () => {
+        const hidden = document.body.classList.toggle("panel-hidden");
+        btn.setAttribute("aria-expanded", String(!hidden));
+        btn.textContent = hidden ? "Show Panel" : "Hide Panel";
+        try {
+          localStorage.setItem("toolPanelHidden", String(hidden));
+        } catch (e) {}
+      });
+    })();
+  </script>
   <main class="stage">
     <svg id="posterSvg" viewBox="0 0 100 100" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Generated text collision poster">
       <defs>
@@ -127,6 +572,7 @@
     const SVG_NS = "http://www.w3.org/2000/svg";
     const WORLD = { width: 100, height: 100 };
     const ROTATION_FRICTION = 9.5;
+    const WORD_LINE_HEIGHT = 0.92;
     const GRID_TEXT = "INDIGO 2026 ";
     const GRID_LINE_HEIGHT = 1.09;
     const GRID_REPS_DESKTOP = 7;
@@ -171,6 +617,23 @@
       };
     }
 
+    let wordInputsState = ["Spike Art\nMagazine", "", ""];
+    const RECT_LONG_SIDE = 300;
+    let rectRotationDeg = 15;
+    let rectImageDataUrl = null;
+    let rectImageAspect = 1;
+    let rectSnapToSquare = false;
+    let rectImageFilename = null;
+
+    function updateUploadUI() {
+      const thumb = document.getElementById("rectImageThumb");
+      const filenameEl = document.getElementById("rectImageFilename");
+      if (thumb) thumb.style.backgroundImage = rectImageDataUrl ? `url("${rectImageDataUrl}")` : "none";
+      if (filenameEl) filenameEl.textContent = rectImageDataUrl ? (rectImageFilename || "Image selected") : "No image";
+    }
+    let rectSizePx = 300;
+    let rectRadiusPx = 26;
+    let rectObject = null;
     let wordBodies = [];
     let accentBodies = [];
     let customObjects = [];
@@ -233,21 +696,39 @@
     }
 
     function tokensFromInput() {
-      return ["Slop", "till", "You", "Drop"];
+      return wordInputsState.slice();
     }
 
     function metricsFor(text, size, spacing = 0, weight = "700") {
       measureCtx.font = `${weight} ${size}px "univers-next-pro", sans-serif`;
-      const metrics = measureCtx.measureText(text);
-      const chars = [...text];
-      // Use full-string measureText (kerning-aware) then add custom letter-spacing on top
-      const width = Math.max(0, metrics.width + spacing * (chars.length - 1));
+      const lines = String(text).split("\n");
+      const lineHeight = size * WORD_LINE_HEIGHT;
+
+      const lineMetrics = lines.map((line) => {
+        const metrics = measureCtx.measureText(line);
+        const chars = [...line];
+        // Use full-string measureText (kerning-aware) then add custom letter-spacing on top
+        const width = Math.max(0, metrics.width + spacing * (chars.length - 1));
+        return {
+          width,
+          ascent: Number.isFinite(metrics.actualBoundingBoxAscent) && metrics.actualBoundingBoxAscent > 0 ? metrics.actualBoundingBoxAscent : size * 0.78,
+          descent: Number.isFinite(metrics.actualBoundingBoxDescent) ? metrics.actualBoundingBoxDescent : size * 0.18,
+          left: metrics.actualBoundingBoxLeft || 0,
+          right: (Number.isFinite(metrics.actualBoundingBoxRight) && metrics.actualBoundingBoxRight > 0 ? metrics.actualBoundingBoxRight : width)
+        };
+      });
+
+      const firstLine = lineMetrics[0];
+      const lastLine = lineMetrics[lineMetrics.length - 1];
+
       return {
-        width,
-        ascent: Number.isFinite(metrics.actualBoundingBoxAscent) && metrics.actualBoundingBoxAscent > 0 ? metrics.actualBoundingBoxAscent : size * 0.78,
-        descent: Number.isFinite(metrics.actualBoundingBoxDescent) ? metrics.actualBoundingBoxDescent : size * 0.18,
-        left: metrics.actualBoundingBoxLeft || 0,
-        right: (Number.isFinite(metrics.actualBoundingBoxRight) && metrics.actualBoundingBoxRight > 0 ? metrics.actualBoundingBoxRight : width)
+        width: Math.max(...lineMetrics.map((l) => l.width)),
+        ascent: firstLine.ascent,
+        descent: (lines.length - 1) * lineHeight + lastLine.descent,
+        left: Math.min(...lineMetrics.map((l) => l.left)),
+        right: Math.max(...lineMetrics.map((l) => l.right)),
+        lineHeight,
+        lineCount: lines.length
       };
     }
 
@@ -284,6 +765,30 @@
         const charX = x + (prefix.length > 0 ? measureCtx.measureText(prefix).width : 0) + spacing * index;
         ctx[mode](char, charX, y);
       });
+    }
+
+    function drawWordText(ctx, body, mode) {
+      const lines = String(body.text).split("\n");
+      const lineHeight = body.size * WORD_LINE_HEIGHT;
+      lines.forEach((line, index) => {
+        drawSpacedText(ctx, line, body.x, body.y + index * lineHeight, mode);
+      });
+    }
+
+    function renderWordLines(textNode, text) {
+      clear(textNode);
+      const lines = String(text).split("\n");
+      const extraTspans = [];
+      lines.forEach((line, index) => {
+        const tspan = document.createElementNS(SVG_NS, "tspan");
+        tspan.textContent = line;
+        if (index > 0) {
+          tspan.setAttribute("dy", `${WORD_LINE_HEIGHT}em`);
+          extraTspans.push(tspan);
+        }
+        textNode.appendChild(tspan);
+      });
+      return extraTspans;
     }
 
     function fitSize(text, maxWidth, maxHeight, maxSize) {
@@ -375,7 +880,7 @@
     function safeZoneRadius(body) {
       const amount = 5 / 100;
       if (body.kind === "word") return body.size * amount * (body.isAccent ? 2 : 1);
-      return Math.min(body.width, body.height) * amount * 3.6;
+      return Math.min(body.width, body.height) * amount * 1.2;
     }
 
     function updateSafeZoneMask() {
@@ -402,8 +907,8 @@
           // Match overlayTextNode: text shape + stroke of radius on each side
           ctx.lineWidth = radius * 2;
           ctx.font = font(body.size);
-          if (radius > 0) drawSpacedText(ctx, body.text, body.x, body.y, "strokeText");
-          drawSpacedText(ctx, body.text, body.x, body.y, "fillText");
+          if (radius > 0) drawWordText(ctx, body, "strokeText");
+          drawWordText(ctx, body, "fillText");
         } else if (body.maskCanvas && body.shape !== "circle") {
           // Use actual pixel data (same as drawBodyMask) so safe zone hugs the real content
           const pad = radius;
@@ -446,8 +951,8 @@
 
       if (body.kind === "word") {
         ctx.font = font(body.size);
-        if (ctx.lineWidth > 0) drawSpacedText(ctx, body.text, body.x, body.y, "strokeText");
-        drawSpacedText(ctx, body.text, body.x, body.y, "fillText");
+        if (ctx.lineWidth > 0) drawWordText(ctx, body, "strokeText");
+        drawWordText(ctx, body, "fillText");
       } else if (body.shape === "circle") {
         const pad = ctx.lineWidth / 2;
         const rx = body.height / 2 + pad;
@@ -498,7 +1003,9 @@
       const maxAngle = rotationMaxDegrees();
 
       clear(els.mainLayer);
-      clear(els.hitLayer);
+      oldWords.forEach((word) => {
+        if (word.hitNode && word.hitNode.parentNode) word.hitNode.parentNode.removeChild(word.hitNode);
+      });
 
       wordBodies = tokens.map((text, index) => {
         const size = fitSize(text, WORLD.width - edge * 2, Math.max(4, band * 0.82), targetSize);
@@ -528,6 +1035,7 @@
           charOffsets: computeCharOffsets(text, size),
           mass,
           textNode,
+          lineTspans: null,
           hitNode,
           dragging: false,
           dragDx: 0,
@@ -535,7 +1043,7 @@
           lastPointerTime: performance.now()
         };
 
-        textNode.textContent = text;
+        word.lineTspans = renderWordLines(textNode, text);
         hitNode.addEventListener("pointerdown", (event) => startDrag(event, word));
         textNode.addEventListener("pointerdown", (event) => startDrag(event, word));
         els.mainLayer.appendChild(textNode);
@@ -557,15 +1065,11 @@
       });
     }
 
-    function responsiveWordSizePx() {
-      const t = Math.max(0, (window.innerWidth - 393) / (1440 - 393));
-      return 110 + (260 - 110) * t;
-    }
+    let mainWordSizePx = 237;
 
     function wordTargetSize() {
       const svgR = els.svg.getBoundingClientRect();
-      const base = svgR.height > 0 ? responsiveWordSizePx() / svgR.height * WORLD.height : 18.1 * WORLD.width / 100;
-      return base * (18.1 / 18.1);
+      return svgR.height > 0 ? mainWordSizePx / svgR.height * WORLD.height : 18.1 * WORLD.width / 100;
     }
 
     function updateWordMetrics() {
@@ -578,12 +1082,15 @@
       });
     }
 
-    const ACCENT_WORDS = ["7.—9.", "oktober"];
+    let accentInputsState = ["7.—9.", "oktober"];
+    function accentTokensFromInput() {
+      return accentInputsState.slice();
+    }
+    let accentWordSizePx = 120;
+
     function accentWordSize() {
       const svgR = els.svg.getBoundingClientRect();
-      const t = Math.max(0, (window.innerWidth - 393) / (1440 - 393));
-      const px = 64 + (130 - 64) * t;
-      return svgR.height > 0 ? px / svgR.height * WORLD.height : 13;
+      return svgR.height > 0 ? accentWordSizePx / svgR.height * WORLD.height : 13;
     }
 
     function updateAccentWordMetrics() {
@@ -596,15 +1103,22 @@
       });
     }
 
-    function buildAccentWords() {
-      clear(els.accentLayer);
+    function buildAccentWords(keepPositions = false) {
+      const tokens = accentTokensFromInput();
+      const oldWords = accentBodies;
       const size = accentWordSize();
       const maxAngle = rotationMaxDegrees();
 
-      accentBodies = ACCENT_WORDS.map((text, index) => {
+      clear(els.accentLayer);
+      oldWords.forEach((word) => {
+        if (word.hitNode && word.hitNode.parentNode) word.hitNode.parentNode.removeChild(word.hitNode);
+      });
+
+      accentBodies = tokens.map((text, index) => {
         const metrics = metricsFor(text, size);
-        const x = WORLD.width * (index === 0 ? lerpLayout(0.051, 0.215) : lerpLayout(0.127, 0.441));
-        const y = WORLD.height * (index === 0 ? lerpLayout(0.762, 0.569) : lerpLayout(0.872, 0.589));
+        const existing = keepPositions ? oldWords[index] : null;
+        const x = existing ? existing.x : WORLD.width * (index === 0 ? lerpLayout(0.051, 0.215) : lerpLayout(0.127, 0.441));
+        const y = existing ? existing.y : WORLD.height * (index === 0 ? lerpLayout(0.762, 0.569) : lerpLayout(0.872, 0.589));
         const mass = Math.max(1, (metrics.width * (metrics.ascent + metrics.descent)) / 95);
         const textNode = svgEl("text", { class: "accent-text" });
         const hitNode = svgEl("rect", { class: "hit-box" });
@@ -615,10 +1129,10 @@
           index,
           x,
           y,
-          vx: (Math.random() - 0.5) * 1.6,
-          vy: (Math.random() - 0.5) * 1.6,
-          angle: (Math.random() - 0.5) * maxAngle * 1.2,
-          av: (Math.random() - 0.5) * 3,
+          vx: existing ? existing.vx : (Math.random() - 0.5) * 1.6,
+          vy: existing ? existing.vy : (Math.random() - 0.5) * 1.6,
+          angle: existing ? existing.angle : (Math.random() - 0.5) * maxAngle * 1.2,
+          av: existing ? existing.av : (Math.random() - 0.5) * 3,
           wanderAngle: Math.random() * Math.PI * 2,
           wanderTimer: 0.6 + Math.random() * 1.4,
           turnPhase: Math.random() * Math.PI * 2,
@@ -627,13 +1141,14 @@
           charOffsets: computeCharOffsets(text, size),
           mass,
           textNode,
+          lineTspans: null,
           hitNode,
           dragging: false,
           dragDx: 0,
           dragDy: 0,
           lastPointerTime: performance.now()
         };
-        textNode.textContent = text;
+        word.lineTspans = renderWordLines(textNode, text);
         hitNode.addEventListener("pointerdown", (event) => startDrag(event, word));
         textNode.addEventListener("pointerdown", (event) => startDrag(event, word));
         els.accentLayer.appendChild(textNode);
@@ -686,6 +1201,9 @@
         word.textNode.setAttribute("letter-spacing", "0");
         word.textNode.setAttribute("transform", rotate);
         word.textNode.classList.toggle("dragging", word.dragging);
+        if (word.lineTspans && word.lineTspans.length) {
+          word.lineTspans.forEach((tspan) => tspan.setAttribute("x", word.x.toFixed(3)));
+        }
 
         word.hitNode.setAttribute("x", box.left.toFixed(3));
         word.hitNode.setAttribute("y", box.top.toFixed(3));
@@ -709,6 +1227,9 @@
         word.textNode.setAttribute("letter-spacing", "0");
         word.textNode.setAttribute("transform", rotate);
         word.textNode.classList.toggle("dragging", word.dragging);
+        if (word.lineTspans && word.lineTspans.length) {
+          word.lineTspans.forEach((tspan) => tspan.setAttribute("x", word.x.toFixed(3)));
+        }
 
         word.hitNode.setAttribute("x", box.left.toFixed(3));
         word.hitNode.setAttribute("y", box.top.toFixed(3));
@@ -1167,8 +1688,50 @@
     document.addEventListener("pointerup", endDrag);
     document.addEventListener("pointercancel", endDrag);
 
+    function rectContentDims() {
+      if (rectSnapToSquare || !rectImageDataUrl) return { w: RECT_LONG_SIDE, h: RECT_LONG_SIDE };
+      const ar = rectImageAspect || 1;
+      if (ar >= 1) return { w: RECT_LONG_SIDE, h: RECT_LONG_SIDE / ar };
+      return { w: RECT_LONG_SIDE * ar, h: RECT_LONG_SIDE };
+    }
+
+    function rectPhysicalScale() {
+      return rectSizePx / RECT_LONG_SIDE;
+    }
+
+    function rectSvgContent(angle, imageDataUrl, radius) {
+      const { w: contentW, h: contentH } = rectContentDims();
+      const rad = angle * Math.PI / 180;
+      const cos = Math.abs(Math.cos(rad));
+      const sin = Math.abs(Math.sin(rad));
+      const canvasW = contentW * cos + contentH * sin;
+      const canvasH = contentW * sin + contentH * cos;
+      const offsetX = (canvasW - contentW) / 2;
+      const offsetY = (canvasH - contentH) / 2;
+      const cx = canvasW / 2;
+      const cy = canvasH / 2;
+
+      const border = `<rect x="${offsetX}" y="${offsetY}" width="${contentW}" height="${contentH}" rx="${radius}" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>`;
+      const shape = imageDataUrl
+        ? `<defs><clipPath id="rectClip"><rect x="${offsetX}" y="${offsetY}" width="${contentW}" height="${contentH}" rx="${radius}"/></clipPath></defs><image href="${imageDataUrl}" x="${offsetX}" y="${offsetY}" width="${contentW}" height="${contentH}" preserveAspectRatio="xMidYMid slice" clip-path="url(#rectClip)"/>${border}`
+        : `<rect x="${offsetX}" y="${offsetY}" width="${contentW}" height="${contentH}" rx="${radius}" fill="#E5E5E5"/>${border}`;
+
+      return {
+        content: `<svg width="${canvasW}" height="${canvasH}" viewBox="0 0 ${canvasW} ${canvasH}" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(${angle} ${cx} ${cy})">${shape}</g></svg>`,
+        canvasW,
+        canvasH
+      };
+    }
+
     function loadInlineSvg() {
-      const svgDefs = [];
+      const rectResult = rectSvgContent(rectRotationDeg, rectImageDataUrl, rectRadiusPx);
+      const rectCanvasPx = rectPhysicalScale() * rectResult.canvasH;
+      const svgDefs = [
+        {
+          nativeW: rectResult.canvasW, nativeH: rectResult.canvasH, px: 0.68, py: 0.49, pxMax: rectCanvasPx, pxMin: rectCanvasPx,
+          content: rectResult.content
+        },
+      ];
 
       const svgRect = els.svg.getBoundingClientRect();
 
@@ -1231,10 +1794,152 @@
         return object;
       });
 
+      rectObject = customObjects[0] || null;
+
       renderCustomObjects();
       updateBodyNodes();
       layoutGrid();
     }
+
+    function refreshRectVisual() {
+      if (!rectObject) return;
+
+      const result = rectSvgContent(rectRotationDeg, rectImageDataUrl, rectRadiusPx);
+      rectObject.native = { width: result.canvasW, height: result.canvasH };
+      const canvasPx = rectPhysicalScale() * result.canvasH;
+      rectObject.pxMin = canvasPx;
+      rectObject.pxMax = canvasPx;
+      updateSvgObjectSizes();
+
+      const parsed = new DOMParser().parseFromString(result.content, "image/svg+xml");
+      clear(rectObject.imageNode);
+      [...parsed.documentElement.childNodes].forEach((child) => {
+        rectObject.imageNode.appendChild(document.importNode(child, true));
+      });
+
+      const blob = new Blob([result.content], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      buildSvgMaskCanvas(url, (mc) => {
+        rectObject.maskCanvas = mc;
+        rectObject.maskDataUrl = mc.toDataURL();
+        URL.revokeObjectURL(url);
+      });
+
+      keepBodyInsideWorld(rectObject);
+      updateBodyNodes();
+    }
+
+    function setRectRotation(angle) {
+      rectRotationDeg = angle;
+      refreshRectVisual();
+    }
+
+    function setRectImage(dataUrl, onDone) {
+      rectImageDataUrl = dataUrl;
+      if (!dataUrl) {
+        rectImageAspect = 1;
+        refreshRectVisual();
+        if (onDone) onDone();
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        rectImageAspect = (img.naturalWidth / img.naturalHeight) || 1;
+        refreshRectVisual();
+        if (onDone) onDone();
+      };
+      img.onerror = () => {
+        rectImageAspect = 1;
+        refreshRectVisual();
+        if (onDone) onDone();
+      };
+      img.src = dataUrl;
+    }
+
+    function setRectRadius(radius) {
+      rectRadiusPx = radius;
+      refreshRectVisual();
+    }
+
+    function setRectSize(px) {
+      rectSizePx = px;
+      refreshRectVisual();
+    }
+
+    const CONTROLS_STORAGE_KEY = "toolControlsState";
+
+    function saveControlsState() {
+      try {
+        localStorage.setItem(CONTROLS_STORAGE_KEY, JSON.stringify({
+          words: wordInputsState,
+          mainSizePx: mainWordSizePx,
+          accents: accentInputsState,
+          accentSizePx: accentWordSizePx,
+          rectImage: rectImageDataUrl,
+          rectImageAspect: rectImageAspect,
+          rectSnapToSquare: rectSnapToSquare,
+          rectImageFilename: rectImageFilename,
+          rectSizePx: rectSizePx,
+          rectRadiusPx: rectRadiusPx,
+          rectRotationDeg: rectRotationDeg
+        }));
+      } catch (e) {}
+    }
+
+    function loadControlsState() {
+      try {
+        const raw = localStorage.getItem(CONTROLS_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function syncControlsUI() {
+      document.querySelectorAll(".word-input").forEach((el, i) => {
+        el.value = wordInputsState[i] || "";
+      });
+      document.querySelectorAll(".accent-input").forEach((el, i) => {
+        el.value = accentInputsState[i] || "";
+      });
+
+      const setPair = (sliderId, numberId, value) => {
+        const slider = document.getElementById(sliderId);
+        const number = document.getElementById(numberId);
+        if (slider) slider.value = value;
+        if (number) number.value = value;
+      };
+      setPair("mainSizeSlider", "mainSizeNumber", mainWordSizePx);
+      setPair("accentSizeSlider", "accentSizeNumber", accentWordSizePx);
+      setPair("rectSizeSlider", "rectSizeNumber", rectSizePx);
+      setPair("rectRadiusSlider", "rectRadiusNumber", rectRadiusPx);
+
+      const snapCheckbox = document.getElementById("rectSnapSquare");
+      if (snapCheckbox) snapCheckbox.checked = rectSnapToSquare;
+
+      updateUploadUI();
+
+      const rotationSlider = document.getElementById("rectRotation");
+      const rotationValue = document.getElementById("rectRotationValue");
+      if (rotationSlider) rotationSlider.value = rectRotationDeg;
+      if (rotationValue) rotationValue.textContent = `${rectRotationDeg}°`;
+    }
+
+    const savedControls = loadControlsState();
+    if (savedControls) {
+      if (Array.isArray(savedControls.words) && savedControls.words.length === 3) wordInputsState = savedControls.words;
+      if (typeof savedControls.mainSizePx === "number") mainWordSizePx = savedControls.mainSizePx;
+      if (Array.isArray(savedControls.accents) && savedControls.accents.length === 2) accentInputsState = savedControls.accents;
+      if (typeof savedControls.accentSizePx === "number") accentWordSizePx = savedControls.accentSizePx;
+      if (typeof savedControls.rectImage === "string" || savedControls.rectImage === null) rectImageDataUrl = savedControls.rectImage;
+      if (typeof savedControls.rectImageAspect === "number" && savedControls.rectImageAspect > 0) rectImageAspect = savedControls.rectImageAspect;
+      if (typeof savedControls.rectSnapToSquare === "boolean") rectSnapToSquare = savedControls.rectSnapToSquare;
+      if (typeof savedControls.rectImageFilename === "string" || savedControls.rectImageFilename === null) rectImageFilename = savedControls.rectImageFilename;
+      if (typeof savedControls.rectSizePx === "number") rectSizePx = savedControls.rectSizePx;
+      if (typeof savedControls.rectRadiusPx === "number") rectRadiusPx = savedControls.rectRadiusPx;
+      if (typeof savedControls.rectRotationDeg === "number") rectRotationDeg = savedControls.rectRotationDeg;
+    }
+    syncControlsUI();
 
     syncWorldToContainer();
     rebuildGrid();
@@ -1242,6 +1947,31 @@
     buildAccentWords();
     requestAnimationFrame(animate);
     loadInlineSvg();
+
+    // Fetch the default rectangle image and inline it as a data URI so the
+    // mask-canvas rasterization (which loads the SVG as an isolated blob
+    // image) can resolve it too — a relative path only resolves in the
+    // live on-page DOM, not inside that separate blob-image context.
+    // Only fetch the bundled default on a first-ever visit — if any controls
+    // state was already saved (even an intentionally cleared image), respect it.
+    if (!savedControls) {
+      fetch("assets/rect-default.jpg")
+        .then((res) => res.blob())
+        .then((blob) => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        }))
+        .then((dataUrl) => {
+          rectImageFilename = "Default photo";
+          setRectImage(dataUrl, () => {
+            updateUploadUI();
+            saveControlsState();
+          });
+        })
+        .catch(() => {});
+    }
 
     document.fonts.ready.then(() => {
       updateWordMetrics();
@@ -1251,6 +1981,163 @@
       gridSignatureValue = "";
       updateBodyNodes();
     });
+
+    document.querySelectorAll(".word-input").forEach((input, index) => {
+      input.addEventListener("input", () => {
+        wordInputsState[index] = input.value;
+        rebuildWords(true);
+        saveControlsState();
+      });
+    });
+
+    document.querySelectorAll(".accent-input").forEach((input, index) => {
+      input.addEventListener("input", () => {
+        accentInputsState[index] = input.value;
+        buildAccentWords(true);
+        saveControlsState();
+      });
+    });
+
+    (function () {
+      const slider = document.getElementById("rectRotation");
+      const valueLabel = document.getElementById("rectRotationValue");
+      const resetBtn = document.getElementById("rectRotationReset");
+
+      const applyAngle = (angle) => {
+        slider.value = angle;
+        valueLabel.textContent = `${angle}°`;
+        setRectRotation(angle);
+        saveControlsState();
+      };
+
+      slider.addEventListener("input", () => applyAngle(Number(slider.value)));
+      resetBtn.addEventListener("click", () => applyAngle(0));
+    })();
+
+    (function () {
+      const fileInput = document.getElementById("rectImageInput");
+      const clearBtn = document.getElementById("rectImageReset");
+
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          rectImageFilename = file.name;
+          setRectImage(reader.result, () => {
+            updateUploadUI();
+            saveControlsState();
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+
+      clearBtn.addEventListener("click", () => {
+        fileInput.value = "";
+        rectImageFilename = null;
+        setRectImage(null, () => {
+          updateUploadUI();
+          saveControlsState();
+        });
+      });
+    })();
+
+    (function () {
+      const checkbox = document.getElementById("rectSnapSquare");
+      checkbox.addEventListener("change", () => {
+        rectSnapToSquare = checkbox.checked;
+        refreshRectVisual();
+        saveControlsState();
+      });
+    })();
+
+    (function () {
+      const RECT_SIZE_DEFAULT = 300;
+      const slider = document.getElementById("rectSizeSlider");
+      const number = document.getElementById("rectSizeNumber");
+      const resetBtn = document.getElementById("rectSizeReset");
+
+      const applySize = (px) => {
+        slider.value = px;
+        number.value = px;
+        setRectSize(px);
+        saveControlsState();
+      };
+
+      slider.addEventListener("input", () => applySize(Number(slider.value)));
+      number.addEventListener("input", () => {
+        const px = Number(number.value);
+        if (Number.isFinite(px)) applySize(px);
+      });
+      resetBtn.addEventListener("click", () => applySize(RECT_SIZE_DEFAULT));
+    })();
+
+    (function () {
+      const RADIUS_DEFAULT = 26;
+      const slider = document.getElementById("rectRadiusSlider");
+      const number = document.getElementById("rectRadiusNumber");
+      const resetBtn = document.getElementById("rectRadiusReset");
+
+      const applyRadius = (radius) => {
+        slider.value = radius;
+        number.value = radius;
+        setRectRadius(radius);
+        saveControlsState();
+      };
+
+      slider.addEventListener("input", () => applyRadius(Number(slider.value)));
+      number.addEventListener("input", () => {
+        const radius = Number(number.value);
+        if (Number.isFinite(radius)) applyRadius(radius);
+      });
+      resetBtn.addEventListener("click", () => applyRadius(RADIUS_DEFAULT));
+    })();
+
+    (function () {
+      const MAIN_SIZE_DEFAULT = 237;
+      const mainSlider = document.getElementById("mainSizeSlider");
+      const mainNumber = document.getElementById("mainSizeNumber");
+      const mainReset = document.getElementById("mainSizeReset");
+
+      const applyMainSize = (px) => {
+        mainSlider.value = px;
+        mainNumber.value = px;
+        mainWordSizePx = px;
+        updateWordMetrics();
+        wordBodies.forEach(keepBodyInsideWorld);
+        updateBodyNodes();
+        saveControlsState();
+      };
+
+      mainSlider.addEventListener("input", () => applyMainSize(Number(mainSlider.value)));
+      mainNumber.addEventListener("input", () => {
+        const px = Number(mainNumber.value);
+        if (Number.isFinite(px)) applyMainSize(px);
+      });
+      mainReset.addEventListener("click", () => applyMainSize(MAIN_SIZE_DEFAULT));
+
+      const ACCENT_SIZE_DEFAULT = 120;
+      const accentSlider = document.getElementById("accentSizeSlider");
+      const accentNumber = document.getElementById("accentSizeNumber");
+      const accentReset = document.getElementById("accentSizeReset");
+
+      const applyAccentSize = (px) => {
+        accentSlider.value = px;
+        accentNumber.value = px;
+        accentWordSizePx = px;
+        updateAccentWordMetrics();
+        accentBodies.forEach(keepBodyInsideWorld);
+        updateBodyNodes();
+        saveControlsState();
+      };
+
+      accentSlider.addEventListener("input", () => applyAccentSize(Number(accentSlider.value)));
+      accentNumber.addEventListener("input", () => {
+        const px = Number(accentNumber.value);
+        if (Number.isFinite(px)) applyAccentSize(px);
+      });
+      accentReset.addEventListener("click", () => applyAccentSize(ACCENT_SIZE_DEFAULT));
+    })();
   </script>
 </body>
 </html>
