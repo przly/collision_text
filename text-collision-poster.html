@@ -4,6 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Editable Text Collision Poster</title>
+  <link rel="icon" id="favicon" type="image/png" href="favicon/favicon-prod.png">
+  <script>
+    (function () {
+      var isDev = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:';
+      if (isDev) document.getElementById('favicon').href = 'favicon/favicon-dev.png';
+    })();
+  </script>
   <link rel="stylesheet" href="https://use.typekit.net/xfw8hqh.css">
   <style>
     :root {
