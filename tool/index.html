@@ -12,6 +12,9 @@
     })();
   </script>
   <link rel="stylesheet" href="https://use.typekit.net/xfw8hqh.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap">
   <style>
     * {
       box-sizing: border-box;
@@ -23,19 +26,23 @@
       height: 100%;
       margin: 0;
       overflow: hidden;
-      background: #ffffff;
+      background: #e5e5e5;
       font-family: "univers-next-pro", sans-serif;
     }
 
     .stage {
       position: fixed;
       inset: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     #posterSvg {
       display: block;
-      width: 100%;
-      height: 100%;
+      /* Letterbox/pillarbox to a fixed 16:9 no matter the window's own aspect ratio. */
+      width: min(100%, calc((100vh - 20px) * 16 / 9));
+      height: min(100%, calc((100vw - 20px) * 9 / 16));
       overflow: hidden;
       background: #ffffff;
     }
@@ -119,12 +126,241 @@
       font-weight: 700;
       cursor: pointer;
       backdrop-filter: blur(14px);
-      box-shadow: 0 10px 28px rgb(0 0 0 / 10%);
-      transition: background 150ms ease, color 150ms ease, transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow:
+        0 1px 2px rgb(0 0 0 / 12%),
+        0 8px 20px rgb(0 0 0 / 16%),
+        0 14px 36px rgb(255 45 85 / 22%);
+      transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .panel-toggle:hover {
+      background: #E0264C;
     }
 
     .panel-toggle.is-pressed {
       transform: scale(0.94);
+      box-shadow:
+        0 1px 1px rgb(0 0 0 / 10%),
+        0 2px 6px rgb(0 0 0 / 12%),
+        0 4px 12px rgb(255 45 85 / 14%);
+    }
+
+    .export-video-btn {
+      position: fixed;
+      z-index: 6;
+      right: 16px;
+      bottom: 16px;
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid #000;
+      border-radius: 8px;
+      background: #000;
+      color: #fff;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      box-shadow:
+        0 1px 2px rgb(0 0 0 / 12%),
+        0 8px 20px rgb(0 0 0 / 16%),
+        0 14px 36px rgb(0 0 0 / 18%);
+      transition: opacity 150ms ease,
+        transform 120ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .export-video-btn:hover {
+      background: #333;
+    }
+
+    .export-video-btn.is-pressed {
+      transform: scale(0.94);
+      box-shadow:
+        0 1px 1px rgb(0 0 0 / 10%),
+        0 2px 6px rgb(0 0 0 / 12%),
+        0 4px 12px rgb(0 0 0 / 14%);
+    }
+
+    .export-video-btn:disabled {
+      cursor: default;
+      opacity: 0.55;
+    }
+
+    .info-toggle {
+      position: fixed;
+      z-index: 6;
+      top: 16px;
+      right: 16px;
+      width: 38px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #000;
+      border-radius: 50%;
+      background: #000;
+      color: #fff;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      box-shadow:
+        0 1px 2px rgb(0 0 0 / 12%),
+        0 8px 20px rgb(0 0 0 / 16%),
+        0 14px 36px rgb(0 0 0 / 18%);
+      transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .info-toggle:hover {
+      background: #333;
+    }
+
+    .info-toggle.is-pressed {
+      transform: scale(0.94);
+      box-shadow:
+        0 1px 1px rgb(0 0 0 / 10%),
+        0 2px 6px rgb(0 0 0 / 12%),
+        0 4px 12px rgb(0 0 0 / 14%);
+    }
+
+    body.exporting .panel-toggle,
+    body.exporting .control-panel,
+    body.exporting .export-video-btn,
+    body.exporting .info-toggle {
+      display: none !important;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgb(0 0 0 / 45%);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay[hidden] {
+      display: none;
+    }
+
+    .modal-card {
+      width: min(360px, 100%);
+      padding: 24px;
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 16px;
+      box-shadow: 0 24px 60px rgb(0 0 0 / 24%);
+      font-family: "Inter", sans-serif;
+      color: #111;
+    }
+
+    .modal-card h2 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .modal-card p {
+      margin: 0 0 16px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .modal-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      padding: 0 16px;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .modal-btn:active {
+      transform: scale(0.96);
+    }
+
+    .modal-btn-cancel {
+      border: 1px solid #dad8d1;
+      background: #fff;
+      color: #111;
+    }
+
+    .modal-btn-cancel:hover {
+      background: #ececec;
+    }
+
+    .modal-btn-confirm {
+      border: none;
+      background: #000;
+      color: #fff;
+    }
+
+    .modal-btn-confirm:hover {
+      background: #333;
+    }
+
+    .modal-card--info {
+      width: min(420px, 100%);
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+    }
+
+    .modal-card--info h2 {
+      font-size: 21px;
+    }
+
+    .modal-card--info p {
+      font-size: 16px;
+    }
+
+    .info-sections {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .info-sections h3 {
+      margin: 0 0 4px;
+      font-size: 17px;
+      font-weight: 700;
+      color: #111;
+    }
+
+    .info-sections p {
+      margin: 0;
+      font-size: 16px;
+      color: #666;
+    }
+
+    .info-sections strong {
+      color: #FF2D55;
+      font-weight: 700;
+    }
+
+    /* The "cursor" capture constraint isn't honored for tab capture in every
+       browser, so hide the OS pointer glyph ourselves while recording. */
+    body.exporting,
+    body.exporting * {
+      cursor: none !important;
     }
 
     .control-panel {
@@ -142,7 +378,7 @@
       box-shadow: 0 20px 40px rgb(0 0 0 / 12%);
       backdrop-filter: blur(18px);
       color: #111;
-      font-family: "univers-next-pro", sans-serif;
+      font-family: "Inter", sans-serif;
       font-size: 14px;
       line-height: 1.5;
       transform-origin: top left;
@@ -161,8 +397,8 @@
     }
 
     .control-panel .group {
-      margin-top: 24px;
-      padding-top: 20px;
+      margin-top: 40px;
+      padding-top: 40px;
       border-top: 1px solid #d8d6d0;
     }
 
@@ -179,17 +415,13 @@
       color: #111;
     }
 
-    .control-panel .group h3.h3-accent {
-      color: #FF2D55;
-    }
-
     .control-panel p {
       margin: 0 0 14px;
       color: #333;
     }
 
     .control-panel .field {
-      margin: 0 0 14px;
+      margin: 0 0 22px;
     }
 
     .control-panel label {
@@ -215,6 +447,75 @@
       height: 16px;
       accent-color: #FF2D55;
       cursor: pointer;
+    }
+
+    .segmented {
+      position: relative;
+      display: flex;
+      gap: 2px;
+      padding: 2px;
+      background: #ececec;
+      border: 1px solid #d8d6d0;
+      border-radius: 10px;
+    }
+
+    .segmented-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 0;
+      height: calc(100% - 4px);
+      background: #000;
+      border-radius: 8px;
+      transition: left 400ms cubic-bezier(0.16, 1, 0.3, 1), width 400ms cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: left, width;
+    }
+
+    .segmented-option {
+      position: relative;
+      z-index: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex: 1;
+      min-height: 30px;
+      padding: 0 10px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: #666;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 150ms ease, transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .segmented-option:hover {
+      color: #111;
+    }
+
+    .segmented-option:active {
+      transform: scale(0.96);
+    }
+
+    .segmented-icon {
+      flex: none;
+      display: block;
+      color: inherit;
+    }
+
+    .segmented-option.is-active,
+    .segmented-option.is-active:hover {
+      color: #fff;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .segmented-thumb {
+        transition: none;
+      }
     }
 
     .control-panel input[type="text"],
@@ -245,15 +546,6 @@
       box-shadow: 0 0 0 3px rgb(255 45 85 / 18%);
     }
 
-    .control-panel .label-accent {
-      color: #FF2D55;
-    }
-
-    .control-panel .input-accent {
-      color: #FF2D55;
-      border-color: rgb(255 45 85 / 40%);
-    }
-
     .control-panel input[type="range"] {
       width: 100%;
       accent-color: #FF2D55;
@@ -272,6 +564,43 @@
       gap: 10px;
     }
 
+    .control-panel .row textarea,
+    .control-panel .row input[type="text"] {
+      flex: 1;
+      width: auto;
+      min-width: 0;
+    }
+
+    .control-panel .clear-input-btn {
+      flex: none;
+      align-self: flex-start;
+      width: 30px;
+      height: 30px;
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 1px solid #dad8d1;
+      border-radius: 8px;
+      background: #fff;
+      color: #666;
+      cursor: pointer;
+      transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .control-panel .clear-input-btn:hover {
+      background: #ececec;
+    }
+
+    .control-panel .clear-input-btn:active {
+      transform: scale(0.94);
+    }
+
+    .control-panel .clear-input-btn svg {
+      display: block;
+    }
+
     .control-panel .file-input-hidden {
       position: absolute;
       width: 1px;
@@ -286,46 +615,108 @@
 
     .control-panel .upload-control {
       display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      width: 100%;
+      padding: 8px;
+      background: #f5f5f5;
+      border: 0.5px solid #e5e5e5;
+      border-radius: 16px;
+      transition: background 150ms ease, border-color 150ms ease;
+    }
+
+    .control-panel .upload-control.is-drag-over {
+      background: rgb(255 45 85 / 8%);
+      border: 1.5px dashed #FF2D55;
+    }
+
+    .control-panel .upload-drop-hint {
+      display: none;
+      margin: 0;
+      width: 100%;
+      min-height: 100px;
       align-items: center;
-      gap: 10px;
+      justify-content: center;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #FF2D55;
+    }
+
+    .control-panel .upload-control.is-drag-over .upload-row,
+    .control-panel .upload-control.is-drag-over .upload-divider,
+    .control-panel .upload-control.is-drag-over .upload-actions {
+      display: none;
+    }
+
+    .control-panel .upload-control.is-drag-over .upload-drop-hint {
+      display: flex;
+    }
+
+    .control-panel .upload-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
     }
 
     .control-panel .upload-thumb {
       flex: none;
-      width: 44px;
-      height: 44px;
+      width: 50px;
+      height: 50px;
       border-radius: 8px;
-      border: 1px solid #d8d6d0;
-      background-color: #E5E5E5;
+      border: 0.5px solid #e5e5e5;
+      background-color: #fff;
       background-size: cover;
       background-position: center;
     }
 
-    .control-panel .upload-info {
+    .control-panel .upload-filename {
       flex: 1;
       min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 600;
+      color: #000;
+    }
+
+    .control-panel .upload-filename.is-empty {
+      color: #a1a1a1;
+    }
+
+    .control-panel .upload-divider {
+      width: 100%;
+      height: 0;
+      border-top: 0.5px solid #e5e5e5;
+    }
+
+    .control-panel .upload-actions {
       display: flex;
-      flex-direction: column;
-      gap: 6px;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
     }
 
     .control-panel .upload-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      align-self: flex-start;
-      min-height: 30px;
+      height: 36px;
+      margin: 0;
       padding: 0 14px;
-      border: 1px solid #111;
+      border: none;
       border-radius: 8px;
-      background: #111;
+      background: #000;
       color: #fff;
       font: inherit;
-      font-size: 12px;
-      font-weight: 700;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
-      transition: background 150ms ease, transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .control-panel .upload-btn:hover {
@@ -336,17 +727,41 @@
       transform: scale(0.96);
     }
 
-    .control-panel .file-input-hidden:focus-visible + .upload-info .upload-btn {
+    .control-panel .file-input-hidden:focus-visible + .upload-btn {
       outline: 2px solid #FF2D55;
       outline-offset: 2px;
     }
 
-    .control-panel .upload-filename {
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .control-panel .upload-clear-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      padding: 0 14px;
+      border: 0.5px solid #dad8d1;
+      border-radius: 8px;
+      background: #fff;
+      color: #000;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
       white-space: nowrap;
-      font-size: 12px;
-      color: #666;
+      transition: opacity 150ms ease, transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .control-panel .upload-clear-btn:hover {
+      background: #ececec;
+    }
+
+    .control-panel .upload-clear-btn:active {
+      transform: scale(0.96);
+    }
+
+    .control-panel .upload-clear-btn:disabled {
+      opacity: 0.2;
+      cursor: default;
+      pointer-events: none;
     }
 
     .control-panel .size-number {
@@ -374,7 +789,7 @@
       flex: none;
       min-height: 30px;
       padding: 0 12px;
-      border: 1px solid #d8d6d0;
+      border: 1px solid #dad8d1;
       border-radius: 8px;
       background: #fff;
       color: #111;
@@ -382,19 +797,15 @@
       font-size: 12px;
       font-weight: 700;
       cursor: pointer;
-      transition: border-color 150ms ease, background 150ms ease, transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .control-panel .reset-btn:hover {
-      border-color: #FF2D55;
+      background: #ececec;
     }
 
     .control-panel .reset-btn:active {
       transform: scale(0.94);
-    }
-
-    .control-panel .label-accent span {
-      color: #FF2D55;
     }
 
     body.panel-hidden .control-panel {
@@ -422,7 +833,9 @@
       }
 
       .panel-toggle,
-      .panel-toggle.is-pressed {
+      .panel-toggle.is-pressed,
+      .export-video-btn,
+      .export-video-btn.is-pressed {
         transform: none;
         transition: background 150ms ease, color 150ms ease;
       }
@@ -438,25 +851,58 @@
       }
     } catch (e) {}
   </script>
-  <button id="panelToggle" class="panel-toggle" type="button" aria-expanded="false" aria-controls="controlPanel">Show Panel</button>
+  <button id="panelToggle" class="panel-toggle" type="button" aria-expanded="false" aria-controls="controlPanel">Edit Text & Image</button>
   <aside id="controlPanel" class="control-panel">
     <div class="group">
       <h3>Words</h3>
       <div class="field">
         <label for="wordInput0">Word 1</label>
-        <textarea id="wordInput0" class="word-input" rows="2" autocomplete="off" spellcheck="false">Spike Art
+        <div class="row">
+          <textarea id="wordInput0" class="word-input" rows="2" autocomplete="off" spellcheck="false">Spike Art
 Magazine</textarea>
+          <button type="button" class="clear-input-btn" data-clear-target="wordInput0" aria-label="Clear Word 1" title="Clear">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2.5 4H11.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M5 4V2.75C5 2.34 5.34 2 5.75 2H8.25C8.66 2 9 2.34 9 2.75V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3.5 4L4 11.25C4.02 11.66 4.36 12 4.78 12H9.22C9.64 12 9.98 11.66 10 11.25L10.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 6.25V9.75" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M8 6.25V9.75" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="field">
         <label for="wordInput1">Word 2</label>
-        <textarea id="wordInput1" class="word-input" rows="1" autocomplete="off" spellcheck="false"></textarea>
+        <div class="row">
+          <textarea id="wordInput1" class="word-input" rows="1" autocomplete="off" spellcheck="false"></textarea>
+          <button type="button" class="clear-input-btn" data-clear-target="wordInput1" aria-label="Clear Word 2" title="Clear">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2.5 4H11.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M5 4V2.75C5 2.34 5.34 2 5.75 2H8.25C8.66 2 9 2.34 9 2.75V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3.5 4L4 11.25C4.02 11.66 4.36 12 4.78 12H9.22C9.64 12 9.98 11.66 10 11.25L10.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 6.25V9.75" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M8 6.25V9.75" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="field">
         <label for="wordInput2">Word 3</label>
-        <textarea id="wordInput2" class="word-input" rows="1" autocomplete="off" spellcheck="false"></textarea>
+        <div class="row">
+          <textarea id="wordInput2" class="word-input" rows="1" autocomplete="off" spellcheck="false"></textarea>
+          <button type="button" class="clear-input-btn" data-clear-target="wordInput2" aria-label="Clear Word 3" title="Clear">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2.5 4H11.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M5 4V2.75C5 2.34 5.34 2 5.75 2H8.25C8.66 2 9 2.34 9 2.75V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3.5 4L4 11.25C4.02 11.66 4.36 12 4.78 12H9.22C9.64 12 9.98 11.66 10 11.25L10.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 6.25V9.75" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M8 6.25V9.75" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="field">
-        <label for="mainSizeSlider">Word Size</label>
+        <label for="mainSizeSlider">Font Size</label>
         <div class="row">
           <input id="mainSizeSlider" type="range" min="60" max="320" step="1" value="237">
           <input id="mainSizeNumber" class="size-number" type="number" min="60" max="320" step="1" value="237">
@@ -465,43 +911,80 @@ Magazine</textarea>
       </div>
     </div>
     <div class="group">
-      <h3 class="h3-accent">Accent</h3>
+      <h3>Accent</h3>
       <div class="field">
-        <label for="accentInput0" class="label-accent">Accent 1</label>
-        <textarea id="accentInput0" class="accent-input input-accent" rows="1" autocomplete="off" spellcheck="false">7.—9.</textarea>
+        <label for="accentInput0">Accent 1</label>
+        <div class="row">
+          <textarea id="accentInput0" class="accent-input" rows="1" autocomplete="off" spellcheck="false">7.—9.</textarea>
+          <button type="button" class="clear-input-btn" data-clear-target="accentInput0" aria-label="Clear Accent 1" title="Clear">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2.5 4H11.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M5 4V2.75C5 2.34 5.34 2 5.75 2H8.25C8.66 2 9 2.34 9 2.75V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3.5 4L4 11.25C4.02 11.66 4.36 12 4.78 12H9.22C9.64 12 9.98 11.66 10 11.25L10.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 6.25V9.75" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M8 6.25V9.75" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="field">
-        <label for="accentInput1" class="label-accent">Accent 2</label>
-        <textarea id="accentInput1" class="accent-input input-accent" rows="1" autocomplete="off" spellcheck="false">oktober</textarea>
+        <label for="accentInput1">Accent 2</label>
+        <div class="row">
+          <textarea id="accentInput1" class="accent-input" rows="1" autocomplete="off" spellcheck="false">oktober</textarea>
+          <button type="button" class="clear-input-btn" data-clear-target="accentInput1" aria-label="Clear Accent 2" title="Clear">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2.5 4H11.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M5 4V2.75C5 2.34 5.34 2 5.75 2H8.25C8.66 2 9 2.34 9 2.75V4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3.5 4L4 11.25C4.02 11.66 4.36 12 4.78 12H9.22C9.64 12 9.98 11.66 10 11.25L10.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6 6.25V9.75" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              <path d="M8 6.25V9.75" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
       <div class="field">
-        <label for="accentSizeSlider" class="label-accent">Accent Size</label>
+        <label for="accentSizeSlider">Font Size</label>
         <div class="row">
           <input id="accentSizeSlider" type="range" min="30" max="160" step="1" value="120">
-          <input id="accentSizeNumber" class="size-number input-accent" type="number" min="30" max="160" step="1" value="120">
+          <input id="accentSizeNumber" class="size-number" type="number" min="30" max="160" step="1" value="120">
           <button id="accentSizeReset" class="reset-btn" type="button">Reset</button>
         </div>
       </div>
     </div>
     <div class="group">
-      <h3>Rectangle</h3>
+      <h3>Image 1</h3>
       <div class="field">
-        <label for="rectImageInput">Image</label>
-        <div class="upload-control">
-          <div id="rectImageThumb" class="upload-thumb"></div>
-          <div class="upload-info">
-            <label for="rectImageInput" class="upload-btn">Choose Image</label>
-            <span id="rectImageFilename" class="upload-filename">No image</span>
+        <div id="rectImageDropzone" class="upload-control">
+          <div class="upload-row">
+            <div id="rectImageThumb" class="upload-thumb"></div>
+            <span id="rectImageFilename" class="upload-filename is-empty">Default image</span>
           </div>
-          <input id="rectImageInput" type="file" accept="image/*" class="file-input-hidden">
-          <button id="rectImageReset" class="reset-btn" type="button">Clear</button>
+          <div class="upload-divider"></div>
+          <div class="upload-actions">
+            <input id="rectImageInput" type="file" accept="image/*" class="file-input-hidden">
+            <label for="rectImageInput" class="upload-btn">Choose Image</label>
+            <button id="rectImageReset" class="upload-clear-btn" type="button" disabled>Clear</button>
+          </div>
+          <p class="upload-drop-hint">Drop your image here</p>
         </div>
       </div>
       <div class="field">
-        <label class="checkbox-label">
-          <input id="rectSnapSquare" type="checkbox">
-          Snap to Rectangle
-        </label>
+        <label>Image Shape</label>
+        <div id="rectShapeSegmented" class="segmented" role="group" aria-label="Image 1 shape">
+          <div class="segmented-thumb" aria-hidden="true"></div>
+          <button type="button" class="segmented-option is-active" data-shape="rectangle">
+            <svg class="segmented-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <rect x="1" y="3.5" width="12" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+            </svg>
+            Rectangle
+          </button>
+          <button type="button" class="segmented-option" data-shape="square">
+            <svg class="segmented-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+            </svg>
+            Square
+          </button>
+        </div>
       </div>
       <div class="field">
         <label for="rectSizeSlider">Size</label>
@@ -527,14 +1010,104 @@ Magazine</textarea>
         </div>
       </div>
     </div>
+    <div class="group">
+      <h3>Image 2</h3>
+      <div class="field">
+        <div id="rectImageDropzone2" class="upload-control">
+          <div class="upload-row">
+            <div id="rectImageThumb2" class="upload-thumb"></div>
+            <span id="rectImageFilename2" class="upload-filename is-empty">Default image</span>
+          </div>
+          <div class="upload-divider"></div>
+          <div class="upload-actions">
+            <input id="rectImageInput2" type="file" accept="image/*" class="file-input-hidden">
+            <label for="rectImageInput2" class="upload-btn">Choose Image</label>
+            <button id="rectImageReset2" class="upload-clear-btn" type="button" disabled>Clear</button>
+          </div>
+          <p class="upload-drop-hint">Drop your image here</p>
+        </div>
+      </div>
+      <div class="field">
+        <label>Image Shape</label>
+        <div id="rectShapeSegmented2" class="segmented" role="group" aria-label="Image 2 shape">
+          <div class="segmented-thumb" aria-hidden="true"></div>
+          <button type="button" class="segmented-option is-active" data-shape="rectangle">
+            <svg class="segmented-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <rect x="1" y="3.5" width="12" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+            </svg>
+            Rectangle
+          </button>
+          <button type="button" class="segmented-option" data-shape="square">
+            <svg class="segmented-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+            </svg>
+            Square
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="rectSizeSlider2">Size</label>
+        <div class="row">
+          <input id="rectSizeSlider2" type="range" min="250" max="750" step="1" value="300">
+          <input id="rectSizeNumber2" class="size-number" type="number" min="250" max="750" step="1" value="300">
+          <button id="rectSizeReset2" class="reset-btn" type="button">Reset</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="rectRadiusSlider2">Corner Radius</label>
+        <div class="row">
+          <input id="rectRadiusSlider2" type="range" min="0" max="150" step="1" value="26">
+          <input id="rectRadiusNumber2" class="size-number" type="number" min="0" max="150" step="1" value="26">
+          <button id="rectRadiusReset2" class="reset-btn" type="button">Reset</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="rectRotation2">Rotation <span id="rectRotationValue2">-12°</span></label>
+        <div class="row">
+          <input id="rectRotation2" type="range" min="-20" max="20" step="1" value="-12">
+          <button id="rectRotationReset2" class="reset-btn" type="button">Reset</button>
+        </div>
+      </div>
+    </div>
   </aside>
+
+  <button id="infoToggle" class="info-toggle" type="button" aria-haspopup="dialog" aria-controls="infoModal" title="About the controls">?</button>
+
+  <div id="infoModal" class="modal-overlay" hidden>
+    <div class="modal-card modal-card--info" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
+      <h2 id="infoModalTitle">Controls</h2>
+      <p>A quick guide to what everything in the panel does.</p>
+      <div class="info-sections">
+        <section>
+          <h3>1. Edit</h3>
+          <p>Click the pink <strong>Edit Text &amp; Image</strong> button to open the panel and set your own text, images, and other parameters.</p>
+        </section>
+        <section>
+          <h3>2. Export</h3>
+          <p>Click the black <strong>Export Video</strong> button, pick a duration, <strong>allow</strong> the tab recording permission, then wait for the video to render.</p>
+        </section>
+        <section>
+          <h3>Words &amp; Accent</h3>
+          <p>Type up to three headlines and two accent words (e.g. a date, starting time). <br><br> Accents render as the pink-coloured text in the animation. <br><br> Press Enter in any inputfield to break it onto a new line. <br><br> <strong>Font Size</strong> scales each headline and accent group independently, and the trash buttons clears a field.</p>
+        </section>
+        <section>
+          <h3>Image 1 &amp; Image 2</h3>
+          <p>Choose an image or drag one onto the upload area in the control panel. <br><br> <strong>Rectangle</strong> keeps the image's original aspect ratio, while <strong>Square</strong> forces a 1:1 ratio. <br><br> <strong>Size</strong> and <strong>Corner Radius</strong> adjust its scale and corner rounding, and <strong>Rotation</strong> tilts the images. Each image can be rotated and scaled independently.</p>
+        </section>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="infoModalClose" class="modal-btn modal-btn-confirm">Got it</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     (function () {
       const btn = document.getElementById("panelToggle");
 
       const hiddenNow = document.body.classList.contains("panel-hidden");
       btn.setAttribute("aria-expanded", String(!hiddenNow));
-      btn.textContent = hiddenNow ? "Show Panel" : "Hide Panel";
+      btn.textContent = hiddenNow ? "Edit Text & Image" : "Hide Panel";
 
       btn.addEventListener("pointerdown", () => btn.classList.add("is-pressed"));
       ["pointerup", "pointercancel", "pointerleave"].forEach((type) => {
@@ -544,10 +1117,33 @@ Magazine</textarea>
       btn.addEventListener("click", () => {
         const hidden = document.body.classList.toggle("panel-hidden");
         btn.setAttribute("aria-expanded", String(!hidden));
-        btn.textContent = hidden ? "Show Panel" : "Hide Panel";
+        btn.textContent = hidden ? "Edit Text & Image" : "Hide Panel";
         try {
           localStorage.setItem("toolPanelHidden", String(hidden));
         } catch (e) {}
+      });
+    })();
+
+    (function () {
+      const btn = document.getElementById("infoToggle");
+      const modal = document.getElementById("infoModal");
+      const closeBtn = document.getElementById("infoModalClose");
+
+      btn.addEventListener("pointerdown", () => btn.classList.add("is-pressed"));
+      ["pointerup", "pointercancel", "pointerleave"].forEach((type) => {
+        btn.addEventListener(type, () => btn.classList.remove("is-pressed"));
+      });
+
+      const open = () => { modal.hidden = false; };
+      const close = () => { modal.hidden = true; };
+
+      btn.addEventListener("click", open);
+      closeBtn.addEventListener("click", close);
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) close();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !modal.hidden) close();
       });
     })();
   </script>
@@ -567,6 +1163,26 @@ Magazine</textarea>
       <g id="hitLayer"></g>
     </svg>
   </main>
+  <button id="exportVideoBtn" class="export-video-btn" type="button">Export Video</button>
+
+  <div id="exportDurationModal" class="modal-overlay" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="exportDurationTitle">
+      <h2 id="exportDurationTitle">Export Video</h2>
+      <p>Choose a duration for the exported clip.</p>
+      <div id="exportDurationSegmented" class="segmented" role="group" aria-label="Video duration">
+        <div class="segmented-thumb" aria-hidden="true"></div>
+        <button type="button" class="segmented-option is-active" data-duration="5000">5s</button>
+        <button type="button" class="segmented-option" data-duration="10000">10s</button>
+        <button type="button" class="segmented-option" data-duration="30000">30s</button>
+        <button type="button" class="segmented-option" data-duration="120000">2min</button>
+        <button type="button" class="segmented-option" data-duration="300000">5min</button>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="exportDurationCancel" class="modal-btn modal-btn-cancel">Cancel</button>
+        <button type="button" id="exportDurationConfirm" class="modal-btn modal-btn-confirm">Export</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const SVG_NS = "http://www.w3.org/2000/svg";
@@ -619,21 +1235,67 @@ Magazine</textarea>
 
     let wordInputsState = ["Spike Art\nMagazine", "", ""];
     const RECT_LONG_SIDE = 300;
-    let rectRotationDeg = 15;
-    let rectImageDataUrl = null;
-    let rectImageAspect = 1;
-    let rectSnapToSquare = false;
-    let rectImageFilename = null;
 
-    function updateUploadUI() {
-      const thumb = document.getElementById("rectImageThumb");
-      const filenameEl = document.getElementById("rectImageFilename");
-      if (thumb) thumb.style.backgroundImage = rectImageDataUrl ? `url("${rectImageDataUrl}")` : "none";
-      if (filenameEl) filenameEl.textContent = rectImageDataUrl ? (rectImageFilename || "Image selected") : "No image";
+    function createRectState(suffix, px, py, rotationDeg, defaultAssetPath, defaultAssetFilename) {
+      return {
+        suffix,
+        rotationDeg,
+        imageDataUrl: null,
+        imageAspect: 1,
+        snapToSquare: false,
+        imageFilename: null,
+        imageIsDefault: false,
+        sizePx: 300,
+        radiusPx: 26,
+        px, py,
+        object: null,
+        defaultAssetPath,
+        defaultAssetFilename
+      };
     }
-    let rectSizePx = 300;
-    let rectRadiusPx = 26;
-    let rectObject = null;
+
+    const rectStates = [
+      createRectState("", 0.68, 0.49, 15, "assets/rect-default-1.png", "Default photo 1"),
+      createRectState("2", 0.32, 0.61, -12, "assets/rect-default-2.png", "Default photo 2")
+    ];
+
+    function layoutSegmentedThumb(segmentedEl) {
+      if (!segmentedEl) return;
+      const thumb = segmentedEl.querySelector(".segmented-thumb");
+      const active = segmentedEl.querySelector(".segmented-option.is-active");
+      if (!thumb || !active) return;
+      thumb.style.left = active.offsetLeft + "px";
+      thumb.style.width = active.offsetWidth + "px";
+    }
+
+    function initSegmentedControl(segmentedEl, onSelect) {
+      const options = segmentedEl.querySelectorAll(".segmented-option");
+      options.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          options.forEach((b) => b.classList.toggle("is-active", b === btn));
+          layoutSegmentedThumb(segmentedEl);
+          onSelect(btn);
+        });
+      });
+      layoutSegmentedThumb(segmentedEl);
+    }
+
+    window.addEventListener("resize", () => {
+      document.querySelectorAll(".segmented").forEach(layoutSegmentedThumb);
+    });
+
+    function updateUploadUI(state) {
+      const thumb = document.getElementById("rectImageThumb" + state.suffix);
+      const filenameEl = document.getElementById("rectImageFilename" + state.suffix);
+      const clearBtn = document.getElementById("rectImageReset" + state.suffix);
+      const hasImage = !!state.imageDataUrl;
+      if (thumb) thumb.style.backgroundImage = hasImage ? `url("${state.imageDataUrl}")` : "none";
+      if (filenameEl) {
+        filenameEl.textContent = hasImage ? (state.imageFilename || "Image selected") : "Default image";
+        filenameEl.classList.toggle("is-empty", !hasImage || state.imageIsDefault);
+      }
+      if (clearBtn) clearBtn.disabled = !hasImage;
+    }
     let wordBodies = [];
     let accentBodies = [];
     let customObjects = [];
@@ -1688,19 +2350,19 @@ Magazine</textarea>
     document.addEventListener("pointerup", endDrag);
     document.addEventListener("pointercancel", endDrag);
 
-    function rectContentDims() {
-      if (rectSnapToSquare || !rectImageDataUrl) return { w: RECT_LONG_SIDE, h: RECT_LONG_SIDE };
-      const ar = rectImageAspect || 1;
+    function rectContentDims(state) {
+      if (state.snapToSquare || !state.imageDataUrl) return { w: RECT_LONG_SIDE, h: RECT_LONG_SIDE };
+      const ar = state.imageAspect || 1;
       if (ar >= 1) return { w: RECT_LONG_SIDE, h: RECT_LONG_SIDE / ar };
       return { w: RECT_LONG_SIDE * ar, h: RECT_LONG_SIDE };
     }
 
-    function rectPhysicalScale() {
-      return rectSizePx / RECT_LONG_SIDE;
+    function rectPhysicalScale(state) {
+      return state.sizePx / RECT_LONG_SIDE;
     }
 
-    function rectSvgContent(angle, imageDataUrl, radius) {
-      const { w: contentW, h: contentH } = rectContentDims();
+    function rectSvgContent(state, angle, imageDataUrl, radius) {
+      const { w: contentW, h: contentH } = rectContentDims(state);
       const rad = angle * Math.PI / 180;
       const cos = Math.abs(Math.cos(rad));
       const sin = Math.abs(Math.sin(rad));
@@ -1711,9 +2373,10 @@ Magazine</textarea>
       const cx = canvasW / 2;
       const cy = canvasH / 2;
 
+      const clipId = "rectClip" + state.suffix;
       const border = `<rect x="${offsetX}" y="${offsetY}" width="${contentW}" height="${contentH}" rx="${radius}" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>`;
       const shape = imageDataUrl
-        ? `<defs><clipPath id="rectClip"><rect x="${offsetX}" y="${offsetY}" width="${contentW}" height="${contentH}" rx="${radius}"/></clipPath></defs><image href="${imageDataUrl}" x="${offsetX}" y="${offsetY}" width="${contentW}" height="${contentH}" preserveAspectRatio="xMidYMid slice" clip-path="url(#rectClip)"/>${border}`
+        ? `<defs><clipPath id="${clipId}"><rect x="${offsetX}" y="${offsetY}" width="${contentW}" height="${contentH}" rx="${radius}"/></clipPath></defs><image href="${imageDataUrl}" x="${offsetX}" y="${offsetY}" width="${contentW}" height="${contentH}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"/>${border}`
         : `<rect x="${offsetX}" y="${offsetY}" width="${contentW}" height="${contentH}" rx="${radius}" fill="#E5E5E5"/>${border}`;
 
       return {
@@ -1724,14 +2387,15 @@ Magazine</textarea>
     }
 
     function loadInlineSvg() {
-      const rectResult = rectSvgContent(rectRotationDeg, rectImageDataUrl, rectRadiusPx);
-      const rectCanvasPx = rectPhysicalScale() * rectResult.canvasH;
-      const svgDefs = [
-        {
-          nativeW: rectResult.canvasW, nativeH: rectResult.canvasH, px: 0.68, py: 0.49, pxMax: rectCanvasPx, pxMin: rectCanvasPx,
+      const svgDefs = rectStates.map((state) => {
+        const rectResult = rectSvgContent(state, state.rotationDeg, state.imageDataUrl, state.radiusPx);
+        const rectCanvasPx = rectPhysicalScale(state) * rectResult.canvasH;
+        return {
+          state,
+          nativeW: rectResult.canvasW, nativeH: rectResult.canvasH, px: state.px, py: state.py, pxMax: rectCanvasPx, pxMin: rectCanvasPx,
           content: rectResult.content
-        },
-      ];
+        };
+      });
 
       const svgRect = els.svg.getBoundingClientRect();
 
@@ -1791,98 +2455,103 @@ Magazine</textarea>
           URL.revokeObjectURL(svgBlobUrl);
         });
 
+        def.state.object = object;
         return object;
       });
-
-      rectObject = customObjects[0] || null;
 
       renderCustomObjects();
       updateBodyNodes();
       layoutGrid();
     }
 
-    function refreshRectVisual() {
-      if (!rectObject) return;
+    function refreshRectVisual(state) {
+      const object = state.object;
+      if (!object) return;
 
-      const result = rectSvgContent(rectRotationDeg, rectImageDataUrl, rectRadiusPx);
-      rectObject.native = { width: result.canvasW, height: result.canvasH };
-      const canvasPx = rectPhysicalScale() * result.canvasH;
-      rectObject.pxMin = canvasPx;
-      rectObject.pxMax = canvasPx;
+      const result = rectSvgContent(state, state.rotationDeg, state.imageDataUrl, state.radiusPx);
+      object.native = { width: result.canvasW, height: result.canvasH };
+      const canvasPx = rectPhysicalScale(state) * result.canvasH;
+      object.pxMin = canvasPx;
+      object.pxMax = canvasPx;
       updateSvgObjectSizes();
 
       const parsed = new DOMParser().parseFromString(result.content, "image/svg+xml");
-      clear(rectObject.imageNode);
+      clear(object.imageNode);
       [...parsed.documentElement.childNodes].forEach((child) => {
-        rectObject.imageNode.appendChild(document.importNode(child, true));
+        object.imageNode.appendChild(document.importNode(child, true));
       });
 
       const blob = new Blob([result.content], { type: "image/svg+xml" });
       const url = URL.createObjectURL(blob);
       buildSvgMaskCanvas(url, (mc) => {
-        rectObject.maskCanvas = mc;
-        rectObject.maskDataUrl = mc.toDataURL();
+        object.maskCanvas = mc;
+        object.maskDataUrl = mc.toDataURL();
         URL.revokeObjectURL(url);
       });
 
-      keepBodyInsideWorld(rectObject);
+      keepBodyInsideWorld(object);
       updateBodyNodes();
     }
 
-    function setRectRotation(angle) {
-      rectRotationDeg = angle;
-      refreshRectVisual();
+    function setRectRotation(state, angle) {
+      state.rotationDeg = angle;
+      refreshRectVisual(state);
     }
 
-    function setRectImage(dataUrl, onDone) {
-      rectImageDataUrl = dataUrl;
+    function setRectImage(state, dataUrl, onDone) {
+      state.imageDataUrl = dataUrl;
       if (!dataUrl) {
-        rectImageAspect = 1;
-        refreshRectVisual();
+        state.imageAspect = 1;
+        refreshRectVisual(state);
         if (onDone) onDone();
         return;
       }
       const img = new Image();
       img.onload = () => {
-        rectImageAspect = (img.naturalWidth / img.naturalHeight) || 1;
-        refreshRectVisual();
+        state.imageAspect = (img.naturalWidth / img.naturalHeight) || 1;
+        refreshRectVisual(state);
         if (onDone) onDone();
       };
       img.onerror = () => {
-        rectImageAspect = 1;
-        refreshRectVisual();
+        state.imageAspect = 1;
+        refreshRectVisual(state);
         if (onDone) onDone();
       };
       img.src = dataUrl;
     }
 
-    function setRectRadius(radius) {
-      rectRadiusPx = radius;
-      refreshRectVisual();
+    function setRectRadius(state, radius) {
+      state.radiusPx = radius;
+      refreshRectVisual(state);
     }
 
-    function setRectSize(px) {
-      rectSizePx = px;
-      refreshRectVisual();
+    function setRectSize(state, px) {
+      state.sizePx = px;
+      refreshRectVisual(state);
     }
 
     const CONTROLS_STORAGE_KEY = "toolControlsState";
 
     function saveControlsState() {
       try {
-        localStorage.setItem(CONTROLS_STORAGE_KEY, JSON.stringify({
+        const data = {
           words: wordInputsState,
           mainSizePx: mainWordSizePx,
           accents: accentInputsState,
-          accentSizePx: accentWordSizePx,
-          rectImage: rectImageDataUrl,
-          rectImageAspect: rectImageAspect,
-          rectSnapToSquare: rectSnapToSquare,
-          rectImageFilename: rectImageFilename,
-          rectSizePx: rectSizePx,
-          rectRadiusPx: rectRadiusPx,
-          rectRotationDeg: rectRotationDeg
-        }));
+          accentSizePx: accentWordSizePx
+        };
+        rectStates.forEach((state) => {
+          const p = state.suffix;
+          data["rectImage" + p] = state.imageDataUrl;
+          data["rectImageAspect" + p] = state.imageAspect;
+          data["rectSnapToSquare" + p] = state.snapToSquare;
+          data["rectImageFilename" + p] = state.imageFilename;
+          data["rectImageIsDefault" + p] = state.imageIsDefault;
+          data["rectSizePx" + p] = state.sizePx;
+          data["rectRadiusPx" + p] = state.radiusPx;
+          data["rectRotationDeg" + p] = state.rotationDeg;
+        });
+        localStorage.setItem(CONTROLS_STORAGE_KEY, JSON.stringify(data));
       } catch (e) {}
     }
 
@@ -1911,18 +2580,25 @@ Magazine</textarea>
       };
       setPair("mainSizeSlider", "mainSizeNumber", mainWordSizePx);
       setPair("accentSizeSlider", "accentSizeNumber", accentWordSizePx);
-      setPair("rectSizeSlider", "rectSizeNumber", rectSizePx);
-      setPair("rectRadiusSlider", "rectRadiusNumber", rectRadiusPx);
 
-      const snapCheckbox = document.getElementById("rectSnapSquare");
-      if (snapCheckbox) snapCheckbox.checked = rectSnapToSquare;
+      rectStates.forEach((state) => {
+        const p = state.suffix;
+        setPair("rectSizeSlider" + p, "rectSizeNumber" + p, state.sizePx);
+        setPair("rectRadiusSlider" + p, "rectRadiusNumber" + p, state.radiusPx);
 
-      updateUploadUI();
+        document.querySelectorAll("#rectShapeSegmented" + p + " .segmented-option").forEach((btn) => {
+          const isSquare = btn.dataset.shape === "square";
+          btn.classList.toggle("is-active", isSquare === state.snapToSquare);
+        });
+        layoutSegmentedThumb(document.getElementById("rectShapeSegmented" + p));
 
-      const rotationSlider = document.getElementById("rectRotation");
-      const rotationValue = document.getElementById("rectRotationValue");
-      if (rotationSlider) rotationSlider.value = rectRotationDeg;
-      if (rotationValue) rotationValue.textContent = `${rectRotationDeg}°`;
+        updateUploadUI(state);
+
+        const rotationSlider = document.getElementById("rectRotation" + p);
+        const rotationValue = document.getElementById("rectRotationValue" + p);
+        if (rotationSlider) rotationSlider.value = state.rotationDeg;
+        if (rotationValue) rotationValue.textContent = `${state.rotationDeg}°`;
+      });
     }
 
     const savedControls = loadControlsState();
@@ -1931,13 +2607,17 @@ Magazine</textarea>
       if (typeof savedControls.mainSizePx === "number") mainWordSizePx = savedControls.mainSizePx;
       if (Array.isArray(savedControls.accents) && savedControls.accents.length === 2) accentInputsState = savedControls.accents;
       if (typeof savedControls.accentSizePx === "number") accentWordSizePx = savedControls.accentSizePx;
-      if (typeof savedControls.rectImage === "string" || savedControls.rectImage === null) rectImageDataUrl = savedControls.rectImage;
-      if (typeof savedControls.rectImageAspect === "number" && savedControls.rectImageAspect > 0) rectImageAspect = savedControls.rectImageAspect;
-      if (typeof savedControls.rectSnapToSquare === "boolean") rectSnapToSquare = savedControls.rectSnapToSquare;
-      if (typeof savedControls.rectImageFilename === "string" || savedControls.rectImageFilename === null) rectImageFilename = savedControls.rectImageFilename;
-      if (typeof savedControls.rectSizePx === "number") rectSizePx = savedControls.rectSizePx;
-      if (typeof savedControls.rectRadiusPx === "number") rectRadiusPx = savedControls.rectRadiusPx;
-      if (typeof savedControls.rectRotationDeg === "number") rectRotationDeg = savedControls.rectRotationDeg;
+      rectStates.forEach((state) => {
+        const p = state.suffix;
+        if (typeof savedControls["rectImage" + p] === "string" || savedControls["rectImage" + p] === null) state.imageDataUrl = savedControls["rectImage" + p];
+        if (typeof savedControls["rectImageAspect" + p] === "number" && savedControls["rectImageAspect" + p] > 0) state.imageAspect = savedControls["rectImageAspect" + p];
+        if (typeof savedControls["rectSnapToSquare" + p] === "boolean") state.snapToSquare = savedControls["rectSnapToSquare" + p];
+        if (typeof savedControls["rectImageFilename" + p] === "string" || savedControls["rectImageFilename" + p] === null) state.imageFilename = savedControls["rectImageFilename" + p];
+        if (typeof savedControls["rectImageIsDefault" + p] === "boolean") state.imageIsDefault = savedControls["rectImageIsDefault" + p];
+        if (typeof savedControls["rectSizePx" + p] === "number") state.sizePx = savedControls["rectSizePx" + p];
+        if (typeof savedControls["rectRadiusPx" + p] === "number") state.radiusPx = savedControls["rectRadiusPx" + p];
+        if (typeof savedControls["rectRotationDeg" + p] === "number") state.rotationDeg = savedControls["rectRotationDeg" + p];
+      });
     }
     syncControlsUI();
 
@@ -1948,14 +2628,18 @@ Magazine</textarea>
     requestAnimationFrame(animate);
     loadInlineSvg();
 
-    // Fetch the default rectangle image and inline it as a data URI so the
+    // Fetch each image's default asset and inline it as a data URI so the
     // mask-canvas rasterization (which loads the SVG as an isolated blob
     // image) can resolve it too — a relative path only resolves in the
     // live on-page DOM, not inside that separate blob-image context.
-    // Only fetch the bundled default on a first-ever visit — if any controls
-    // state was already saved (even an intentionally cleared image), respect it.
-    if (!savedControls) {
-      fetch("assets/rect-default.jpg")
+    // Only fetch a given image's bundled default on its own first-ever visit —
+    // checked per image (not the whole saved blob) so adding a new image slot
+    // to an existing session still seeds its default; an image whose key is
+    // already present (even an intentionally cleared `null`) is respected.
+    rectStates.forEach((state) => {
+      const hasSavedImageKey = savedControls && Object.prototype.hasOwnProperty.call(savedControls, "rectImage" + state.suffix);
+      if (hasSavedImageKey || !state.defaultAssetPath) return;
+      fetch(state.defaultAssetPath)
         .then((res) => res.blob())
         .then((blob) => new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -1964,14 +2648,15 @@ Magazine</textarea>
           reader.readAsDataURL(blob);
         }))
         .then((dataUrl) => {
-          rectImageFilename = "Default photo";
-          setRectImage(dataUrl, () => {
-            updateUploadUI();
+          state.imageFilename = state.defaultAssetFilename;
+          state.imageIsDefault = true;
+          setRectImage(state, dataUrl, () => {
+            updateUploadUI(state);
             saveControlsState();
           });
         })
         .catch(() => {});
-    }
+    });
 
     document.fonts.ready.then(() => {
       updateWordMetrics();
@@ -1998,100 +2683,145 @@ Magazine</textarea>
       });
     });
 
-    (function () {
-      const slider = document.getElementById("rectRotation");
-      const valueLabel = document.getElementById("rectRotationValue");
-      const resetBtn = document.getElementById("rectRotationReset");
+    document.querySelectorAll(".clear-input-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const target = document.getElementById(btn.dataset.clearTarget);
+        if (!target) return;
+        target.value = "";
+        target.dispatchEvent(new Event("input", { bubbles: true }));
+        target.focus();
+      });
+    });
 
-      const applyAngle = (angle) => {
-        slider.value = angle;
-        valueLabel.textContent = `${angle}°`;
-        setRectRotation(angle);
-        saveControlsState();
-      };
+    rectStates.forEach((state) => {
+      const p = state.suffix;
 
-      slider.addEventListener("input", () => applyAngle(Number(slider.value)));
-      resetBtn.addEventListener("click", () => applyAngle(0));
-    })();
+      (function () {
+        const slider = document.getElementById("rectRotation" + p);
+        const valueLabel = document.getElementById("rectRotationValue" + p);
+        const resetBtn = document.getElementById("rectRotationReset" + p);
 
-    (function () {
-      const fileInput = document.getElementById("rectImageInput");
-      const clearBtn = document.getElementById("rectImageReset");
+        const applyAngle = (angle) => {
+          slider.value = angle;
+          valueLabel.textContent = `${angle}°`;
+          setRectRotation(state, angle);
+          saveControlsState();
+        };
 
-      fileInput.addEventListener("change", () => {
-        const file = fileInput.files && fileInput.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          rectImageFilename = file.name;
-          setRectImage(reader.result, () => {
-            updateUploadUI();
+        slider.addEventListener("input", () => applyAngle(Number(slider.value)));
+        resetBtn.addEventListener("click", () => applyAngle(0));
+      })();
+
+      (function () {
+        const fileInput = document.getElementById("rectImageInput" + p);
+        const clearBtn = document.getElementById("rectImageReset" + p);
+        const dropzone = document.getElementById("rectImageDropzone" + p);
+
+        function loadImageFile(file) {
+          if (!file || !file.type.startsWith("image/")) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            state.imageFilename = file.name;
+            state.imageIsDefault = false;
+            setRectImage(state, reader.result, () => {
+              updateUploadUI(state);
+              saveControlsState();
+            });
+          };
+          reader.readAsDataURL(file);
+        }
+
+        fileInput.addEventListener("change", () => {
+          const file = fileInput.files && fileInput.files[0];
+          if (file) loadImageFile(file);
+        });
+
+        clearBtn.addEventListener("click", () => {
+          fileInput.value = "";
+          state.imageFilename = null;
+          state.imageIsDefault = false;
+          setRectImage(state, null, () => {
+            updateUploadUI(state);
             saveControlsState();
           });
-        };
-        reader.readAsDataURL(file);
-      });
+        });
 
-      clearBtn.addEventListener("click", () => {
-        fileInput.value = "";
-        rectImageFilename = null;
-        setRectImage(null, () => {
-          updateUploadUI();
+        let dragDepth = 0;
+        dropzone.addEventListener("dragenter", (e) => {
+          e.preventDefault();
+          dragDepth++;
+          dropzone.classList.add("is-drag-over");
+        });
+        dropzone.addEventListener("dragover", (e) => {
+          e.preventDefault();
+        });
+        dropzone.addEventListener("dragleave", () => {
+          dragDepth = Math.max(0, dragDepth - 1);
+          if (dragDepth === 0) dropzone.classList.remove("is-drag-over");
+        });
+        dropzone.addEventListener("drop", (e) => {
+          e.preventDefault();
+          dragDepth = 0;
+          dropzone.classList.remove("is-drag-over");
+          const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (file) {
+            fileInput.value = "";
+            loadImageFile(file);
+          }
+        });
+      })();
+
+      (function () {
+        const segmented = document.getElementById("rectShapeSegmented" + p);
+        initSegmentedControl(segmented, (btn) => {
+          state.snapToSquare = btn.dataset.shape === "square";
+          refreshRectVisual(state);
           saveControlsState();
         });
-      });
-    })();
+      })();
 
-    (function () {
-      const checkbox = document.getElementById("rectSnapSquare");
-      checkbox.addEventListener("change", () => {
-        rectSnapToSquare = checkbox.checked;
-        refreshRectVisual();
-        saveControlsState();
-      });
-    })();
+      (function () {
+        const RECT_SIZE_DEFAULT = 300;
+        const slider = document.getElementById("rectSizeSlider" + p);
+        const number = document.getElementById("rectSizeNumber" + p);
+        const resetBtn = document.getElementById("rectSizeReset" + p);
 
-    (function () {
-      const RECT_SIZE_DEFAULT = 300;
-      const slider = document.getElementById("rectSizeSlider");
-      const number = document.getElementById("rectSizeNumber");
-      const resetBtn = document.getElementById("rectSizeReset");
+        const applySize = (px) => {
+          slider.value = px;
+          number.value = px;
+          setRectSize(state, px);
+          saveControlsState();
+        };
 
-      const applySize = (px) => {
-        slider.value = px;
-        number.value = px;
-        setRectSize(px);
-        saveControlsState();
-      };
+        slider.addEventListener("input", () => applySize(Number(slider.value)));
+        number.addEventListener("input", () => {
+          const px = Number(number.value);
+          if (Number.isFinite(px)) applySize(px);
+        });
+        resetBtn.addEventListener("click", () => applySize(RECT_SIZE_DEFAULT));
+      })();
 
-      slider.addEventListener("input", () => applySize(Number(slider.value)));
-      number.addEventListener("input", () => {
-        const px = Number(number.value);
-        if (Number.isFinite(px)) applySize(px);
-      });
-      resetBtn.addEventListener("click", () => applySize(RECT_SIZE_DEFAULT));
-    })();
+      (function () {
+        const RADIUS_DEFAULT = 26;
+        const slider = document.getElementById("rectRadiusSlider" + p);
+        const number = document.getElementById("rectRadiusNumber" + p);
+        const resetBtn = document.getElementById("rectRadiusReset" + p);
 
-    (function () {
-      const RADIUS_DEFAULT = 26;
-      const slider = document.getElementById("rectRadiusSlider");
-      const number = document.getElementById("rectRadiusNumber");
-      const resetBtn = document.getElementById("rectRadiusReset");
+        const applyRadius = (radius) => {
+          slider.value = radius;
+          number.value = radius;
+          setRectRadius(state, radius);
+          saveControlsState();
+        };
 
-      const applyRadius = (radius) => {
-        slider.value = radius;
-        number.value = radius;
-        setRectRadius(radius);
-        saveControlsState();
-      };
-
-      slider.addEventListener("input", () => applyRadius(Number(slider.value)));
-      number.addEventListener("input", () => {
-        const radius = Number(number.value);
-        if (Number.isFinite(radius)) applyRadius(radius);
-      });
-      resetBtn.addEventListener("click", () => applyRadius(RADIUS_DEFAULT));
-    })();
+        slider.addEventListener("input", () => applyRadius(Number(slider.value)));
+        number.addEventListener("input", () => {
+          const radius = Number(number.value);
+          if (Number.isFinite(radius)) applyRadius(radius);
+        });
+        resetBtn.addEventListener("click", () => applyRadius(RADIUS_DEFAULT));
+      })();
+    });
 
     (function () {
       const MAIN_SIZE_DEFAULT = 237;
@@ -2137,6 +2867,245 @@ Magazine</textarea>
         if (Number.isFinite(px)) applyAccentSize(px);
       });
       accentReset.addEventListener("click", () => applyAccentSize(ACCENT_SIZE_DEFAULT));
+    })();
+  </script>
+  <script>
+    (function () {
+      const btn = document.getElementById("exportVideoBtn");
+      const durationModal = document.getElementById("exportDurationModal");
+      const durationSegmented = document.getElementById("exportDurationSegmented");
+      const durationCancelBtn = document.getElementById("exportDurationCancel");
+      const durationConfirmBtn = document.getElementById("exportDurationConfirm");
+      let selectedDurationMs = 5000;
+      // Request up to 4K; never upscaled beyond what the tab actually renders,
+      // and the canvas fallback path caps to this too, so 60fps stays smooth
+      // even when the real capture resolution comes in lower than this ceiling.
+      const OUTPUT_H = 2160;
+      const OUTPUT_FPS = 60;
+      const originalLabel = btn.textContent;
+      const originalTitle = document.title;
+      let recording = false;
+
+      btn.addEventListener("pointerdown", () => btn.classList.add("is-pressed"));
+      ["pointerup", "pointercancel", "pointerleave"].forEach((type) => {
+        btn.addEventListener(type, () => btn.classList.remove("is-pressed"));
+      });
+
+      function pickMimeType() {
+        if (typeof MediaRecorder === "undefined") return "";
+        const candidates = [
+          "video/mp4;codecs=avc1",
+          "video/mp4",
+          "video/webm;codecs=vp9",
+          "video/webm;codecs=vp8",
+          "video/webm"
+        ];
+        return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+      }
+
+      async function exportVideo(durationMs) {
+        if (recording) return;
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia || typeof MediaRecorder === "undefined") {
+          alert("Video export needs a recent Chrome, Edge, or Safari browser.");
+          return;
+        }
+
+        let displayStream;
+        let canvasStream;
+        let sourceVideo;
+        let drawHandle;
+        let tickRaf;
+        recording = true;
+        btn.disabled = true;
+
+        try {
+          displayStream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+              frameRate: { ideal: OUTPUT_FPS, max: OUTPUT_FPS },
+              height: { ideal: OUTPUT_H },
+              cursor: "never"
+            },
+            audio: false,
+            preferCurrentTab: true,
+            selfBrowserSurface: "include",
+            surfaceSwitching: "exclude",
+            monitorTypeSurfaces: "exclude"
+          });
+
+          // Hide our own UI chrome so the captured tab only shows the animation
+          // (still sitting on the gray page background at this point).
+          document.body.classList.add("exporting");
+
+          // Preferred path: Region Capture. Crop the tab's own video track down
+          // to just the poster SVG at the compositor level, so MediaRecorder can
+          // encode that track directly — a single real-time encode pass, same
+          // cost as recording the raw tab. (A redraw-into-canvas approach works
+          // everywhere but forces a second full decode+encode pass in software,
+          // which is what was tanking the frame rate.)
+          const track = displayStream.getVideoTracks()[0];
+          let nativelyCropped = false;
+          try {
+            if (typeof CropTarget !== "undefined" && typeof track.cropTo === "function") {
+              const target = await CropTarget.fromElement(els.svg);
+              await track.cropTo(target);
+              nativelyCropped = true;
+            }
+          } catch (err) {
+            console.warn("Region Capture unavailable, falling back to canvas crop:", err);
+          }
+          console.log("Capture track settings:", track.getSettings());
+
+          let recordStream = displayStream;
+
+          if (nativelyCropped) {
+            // Chromium's frame pump for a cropped track seems to need an active
+            // consumer beyond MediaRecorder alone, or it can stall on the first
+            // frame. A hidden <video> playing the same (now-cropped) track keeps
+            // frames flowing; MediaRecorder still records the original track,
+            // not anything re-drawn from this video.
+            sourceVideo = document.createElement("video");
+            sourceVideo.muted = true;
+            sourceVideo.playsInline = true;
+            sourceVideo.srcObject = displayStream;
+            await sourceVideo.play().catch(() => {});
+          } else {
+            // Fallback (browsers without Region Capture, e.g. Safari/Firefox):
+            // decode the captured tab into a hidden <video> and redraw only the
+            // SVG's current on-screen rect into an output canvas, sized to match
+            // that rect's captured resolution (capped at OUTPUT_H, never
+            // upscaled) to keep the extra redraw+encode pass as cheap as possible.
+            sourceVideo = document.createElement("video");
+            sourceVideo.muted = true;
+            sourceVideo.playsInline = true;
+            sourceVideo.srcObject = displayStream;
+            await new Promise((resolve) => {
+              sourceVideo.addEventListener("loadedmetadata", resolve, { once: true });
+            });
+            await sourceVideo.play();
+
+            const scaleX = sourceVideo.videoWidth / window.innerWidth;
+            const scaleY = sourceVideo.videoHeight / window.innerHeight;
+            const rect0 = els.svg.getBoundingClientRect();
+            const srcW = rect0.width * scaleX;
+            const srcH = rect0.height * scaleY;
+            const downscale = Math.min(1, OUTPUT_H / srcH);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(srcW * downscale));
+            canvas.height = Math.max(1, Math.round(srcH * downscale));
+            const ctx = canvas.getContext("2d");
+
+            const drawFrame = () => {
+              const rect = els.svg.getBoundingClientRect();
+              ctx.drawImage(
+                sourceVideo,
+                rect.left * scaleX, rect.top * scaleY, srcW, srcH,
+                0, 0, canvas.width, canvas.height
+              );
+              drawHandle = requestAnimationFrame(drawFrame);
+            };
+            drawFrame();
+
+            canvasStream = canvas.captureStream(OUTPUT_FPS);
+            recordStream = canvasStream;
+          }
+
+          const mimeType = pickMimeType();
+          const recorder = new MediaRecorder(
+            recordStream,
+            mimeType ? { mimeType, videoBitsPerSecond: 10_000_000 } : { videoBitsPerSecond: 10_000_000 }
+          );
+          const chunks = [];
+          recorder.addEventListener("dataavailable", (e) => {
+            if (e.data && e.data.size) chunks.push(e.data);
+          });
+          const stopped = new Promise((resolve) => recorder.addEventListener("stop", resolve));
+
+          recorder.start();
+          const startedAt = performance.now();
+
+          const tick = () => {
+            const remaining = Math.max(0, Math.ceil((durationMs - (performance.now() - startedAt)) / 1000));
+            document.title = `Recording… ${remaining}s`;
+            if (recorder.state === "recording") tickRaf = requestAnimationFrame(tick);
+          };
+          tick();
+
+          const videoTrack = displayStream.getVideoTracks()[0];
+          const userStoppedSharing = new Promise((resolve) => {
+            videoTrack.addEventListener("ended", resolve, { once: true });
+          });
+
+          await Promise.race([
+            new Promise((resolve) => setTimeout(resolve, durationMs)),
+            userStoppedSharing
+          ]);
+
+          if (recorder.state !== "inactive") recorder.stop();
+          await stopped;
+
+          const outType = mimeType ? mimeType.split(";")[0] : "video/webm";
+          const blob = new Blob(chunks, { type: outType });
+          const ext = outType.includes("mp4") ? "mp4" : "webm";
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `collision-text-animation.${ext}`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 4000);
+
+          if (ext !== "mp4") {
+            alert("This browser can't encode MP4 directly, so the clip downloaded as WebM instead. Safari and recent Chrome/Edge builds support MP4 export.");
+          }
+        } catch (err) {
+          if (err && err.name !== "NotAllowedError") {
+            console.error(err);
+            alert("Video export failed: " + err.message);
+          }
+        } finally {
+          if (drawHandle) cancelAnimationFrame(drawHandle);
+          if (tickRaf) cancelAnimationFrame(tickRaf);
+          if (sourceVideo) sourceVideo.srcObject = null;
+          if (canvasStream) canvasStream.getTracks().forEach((t) => t.stop());
+          if (displayStream) displayStream.getTracks().forEach((t) => t.stop());
+          document.body.classList.remove("exporting");
+          document.title = originalTitle;
+          btn.disabled = false;
+          btn.textContent = originalLabel;
+          recording = false;
+        }
+      }
+
+      initSegmentedControl(durationSegmented, (option) => {
+        selectedDurationMs = Number(option.dataset.duration);
+      });
+
+      function openDurationModal() {
+        durationModal.hidden = false;
+        layoutSegmentedThumb(durationSegmented);
+      }
+
+      function closeDurationModal() {
+        durationModal.hidden = true;
+      }
+
+      btn.addEventListener("click", openDurationModal);
+
+      durationCancelBtn.addEventListener("click", closeDurationModal);
+
+      durationModal.addEventListener("click", (e) => {
+        if (e.target === durationModal) closeDurationModal();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !durationModal.hidden) closeDurationModal();
+      });
+
+      durationConfirmBtn.addEventListener("click", () => {
+        closeDurationModal();
+        exportVideo(selectedDurationMs);
+      });
     })();
   </script>
 </body>
