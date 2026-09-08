@@ -432,23 +432,6 @@
       color: #666;
     }
 
-    .control-panel .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 0;
-      color: #111;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    .control-panel .checkbox-label input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      accent-color: #FF2D55;
-      cursor: pointer;
-    }
-
     .segmented {
       position: relative;
       display: flex;
@@ -1013,6 +996,9 @@ Magazine</textarea>
     <div class="group">
       <h3>Image 2</h3>
       <div class="field">
+        <button type="button" id="rectEnabled2" class="reset-btn" data-label="Image 2" aria-pressed="true">Hide Image 2</button>
+      </div>
+      <div class="field">
         <div id="rectImageDropzone2" class="upload-control">
           <div class="upload-row">
             <div id="rectImageThumb2" class="upload-thumb"></div>
@@ -1262,7 +1248,8 @@ Magazine</textarea>
         px, py,
         object: null,
         defaultAssetPath,
-        defaultAssetFilename
+        defaultAssetFilename,
+        enabled: true
       };
     }
 
@@ -1290,6 +1277,12 @@ Magazine</textarea>
         });
       });
       layoutSegmentedThumb(segmentedEl);
+    }
+
+    function updateEnabledButton(btn, enabled) {
+      if (!btn) return;
+      btn.textContent = `${enabled ? "Hide" : "Show"} ${btn.dataset.label}`;
+      btn.setAttribute("aria-pressed", String(enabled));
     }
 
     window.addEventListener("resize", () => {
@@ -1733,7 +1726,7 @@ Magazine</textarea>
     function renderCustomObjects() {
       [...els.hitLayer.querySelectorAll(".custom-hit")].forEach((node) => node.remove());
       clear(els.customLayer);
-      customObjects.forEach((customObject) => {
+      customObjects.filter((customObject) => customObject.enabled !== false).forEach((customObject) => {
         els.customLayer.appendChild(customObject.imageNode);
         els.hitLayer.appendChild(customObject.hitNode);
       });
@@ -2051,7 +2044,7 @@ Magazine</textarea>
     }
 
     function physicsBodies() {
-      return wordBodies.concat(accentBodies, customObjects);
+      return wordBodies.concat(accentBodies, customObjects.filter((obj) => obj.enabled !== false));
     }
 
     function clampBodySpeed(body) {
@@ -2444,7 +2437,8 @@ Magazine</textarea>
           mass: 12,
           dragging: false, dragDx: 0, dragDy: 0,
           imageNode: group,
-          hitNode: svgEl("rect", { class: "custom-hit" })
+          hitNode: svgEl("rect", { class: "custom-hit" }),
+          enabled: def.state.enabled
         };
 
         object.hitNode.addEventListener("pointerdown", (e) => startDrag(e, object));
@@ -2562,6 +2556,7 @@ Magazine</textarea>
           data["rectSizePx" + p] = state.sizePx;
           data["rectRadiusPx" + p] = state.radiusPx;
           data["rectRotationDeg" + p] = state.rotationDeg;
+          data["rectEnabled" + p] = state.enabled;
         });
         localStorage.setItem(CONTROLS_STORAGE_KEY, JSON.stringify(data));
       } catch (e) {}
@@ -2595,6 +2590,8 @@ Magazine</textarea>
 
       rectStates.forEach((state) => {
         const p = state.suffix;
+        updateEnabledButton(document.getElementById("rectEnabled" + p), state.enabled);
+
         setPair("rectSizeSlider" + p, "rectSizeNumber" + p, state.sizePx);
         setPair("rectRadiusSlider" + p, "rectRadiusNumber" + p, state.radiusPx);
 
@@ -2629,6 +2626,7 @@ Magazine</textarea>
         if (typeof savedControls["rectSizePx" + p] === "number") state.sizePx = savedControls["rectSizePx" + p];
         if (typeof savedControls["rectRadiusPx" + p] === "number") state.radiusPx = savedControls["rectRadiusPx" + p];
         if (typeof savedControls["rectRotationDeg" + p] === "number") state.rotationDeg = savedControls["rectRotationDeg" + p];
+        if (typeof savedControls["rectEnabled" + p] === "boolean") state.enabled = savedControls["rectEnabled" + p];
       });
     }
     syncControlsUI();
@@ -2707,6 +2705,19 @@ Magazine</textarea>
 
     rectStates.forEach((state) => {
       const p = state.suffix;
+
+      (function () {
+        const btn = document.getElementById("rectEnabled" + p);
+        if (!btn) return;
+        btn.addEventListener("click", () => {
+          state.enabled = !state.enabled;
+          updateEnabledButton(btn, state.enabled);
+          if (state.object) state.object.enabled = state.enabled;
+          renderCustomObjects();
+          updateBodyNodes();
+          saveControlsState();
+        });
+      })();
 
       (function () {
         const slider = document.getElementById("rectRotation" + p);
