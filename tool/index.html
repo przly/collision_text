@@ -1134,8 +1134,14 @@ Magazine</textarea>
         btn.addEventListener(type, () => btn.classList.remove("is-pressed"));
       });
 
+      const SEEN_KEY = "toolInfoSeen";
       const open = () => { modal.hidden = false; };
-      const close = () => { modal.hidden = true; };
+      const close = () => {
+        modal.hidden = true;
+        try {
+          localStorage.setItem(SEEN_KEY, "true");
+        } catch (e) {}
+      };
 
       btn.addEventListener("click", open);
       closeBtn.addEventListener("click", close);
@@ -1145,6 +1151,12 @@ Magazine</textarea>
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && !modal.hidden) close();
       });
+
+      let alreadySeen = true;
+      try {
+        alreadySeen = localStorage.getItem(SEEN_KEY) === "true";
+      } catch (e) {}
+      if (!alreadySeen) open();
     })();
   </script>
   <main class="stage">
