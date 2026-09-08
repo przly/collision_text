@@ -371,6 +371,7 @@
       bottom: 16px;
       width: min(340px, calc(84vw - 32px));
       overflow: auto;
+      scrollbar-gutter: stable;
       padding: 24px;
       background: rgb(255 255 255 / 94%);
       border: 1px solid #d8d6d0;
@@ -413,6 +414,18 @@
       font-size: 18px;
       font-weight: 700;
       color: #111;
+    }
+
+    .control-panel .group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 0 14px;
+    }
+
+    .control-panel .group-header h3 {
+      margin: 0;
     }
 
     .control-panel p {
@@ -791,6 +804,26 @@
       transform: scale(0.94);
     }
 
+    .control-panel .reset-btn.is-show-state {
+      background: #FF2D55;
+      border-color: #FF2D55;
+      color: #fff;
+    }
+
+    .control-panel .reset-btn.is-show-state:hover {
+      background: #E0264C;
+    }
+
+    .control-panel .reset-btn.is-hide-state {
+      background: #000;
+      border-color: #000;
+      color: #fff;
+    }
+
+    .control-panel .reset-btn.is-hide-state:hover {
+      background: #333;
+    }
+
     body.panel-hidden .control-panel {
       opacity: 0;
       pointer-events: none;
@@ -834,6 +867,28 @@
       }
     } catch (e) {}
   </script>
+
+  <div id="browserWarningModal" class="modal-overlay" hidden>
+    <div class="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="browserWarningTitle">
+      <h2 id="browserWarningTitle">This tool is not compatible with your browser.</h2>
+      <p><br>Please open this page in <strong>Chrome, Edge, Brave, etc.</strong></p>
+    </div>
+  </div>
+  <script>
+    (function () {
+      function isChromiumBrowser() {
+        if (navigator.userAgentData && Array.isArray(navigator.userAgentData.brands)) {
+          return navigator.userAgentData.brands.some((b) => b.brand === "Chromium");
+        }
+        return /Chrome\/|Chromium\//.test(navigator.userAgent);
+      }
+
+      if (!isChromiumBrowser()) {
+        document.getElementById("browserWarningModal").hidden = false;
+      }
+    })();
+  </script>
+
   <button id="panelToggle" class="panel-toggle" type="button" aria-expanded="false" aria-controls="controlPanel">Edit Text & Image</button>
   <aside id="controlPanel" class="control-panel">
     <div class="group">
@@ -994,64 +1049,66 @@ Magazine</textarea>
       </div>
     </div>
     <div class="group">
-      <h3>Image 2</h3>
-      <div class="field">
+      <div class="group-header">
+        <h3>Image 2</h3>
         <button type="button" id="rectEnabled2" class="reset-btn" data-label="Image 2" aria-pressed="true">Hide Image 2</button>
       </div>
-      <div class="field">
-        <div id="rectImageDropzone2" class="upload-control">
-          <div class="upload-row">
-            <div id="rectImageThumb2" class="upload-thumb"></div>
-            <span id="rectImageFilename2" class="upload-filename is-empty">Default image</span>
+      <div id="rectSettings2">
+        <div class="field">
+          <div id="rectImageDropzone2" class="upload-control">
+            <div class="upload-row">
+              <div id="rectImageThumb2" class="upload-thumb"></div>
+              <span id="rectImageFilename2" class="upload-filename is-empty">Default image</span>
+            </div>
+            <div class="upload-divider"></div>
+            <div class="upload-actions">
+              <input id="rectImageInput2" type="file" accept="image/*" class="file-input-hidden">
+              <label for="rectImageInput2" class="upload-btn">Choose Image</label>
+              <button id="rectImageReset2" class="upload-clear-btn" type="button" disabled>Clear</button>
+            </div>
+            <p class="upload-drop-hint">Drop your image here</p>
           </div>
-          <div class="upload-divider"></div>
-          <div class="upload-actions">
-            <input id="rectImageInput2" type="file" accept="image/*" class="file-input-hidden">
-            <label for="rectImageInput2" class="upload-btn">Choose Image</label>
-            <button id="rectImageReset2" class="upload-clear-btn" type="button" disabled>Clear</button>
+        </div>
+        <div class="field">
+          <label>Image Shape</label>
+          <div id="rectShapeSegmented2" class="segmented" role="group" aria-label="Image 2 shape">
+            <div class="segmented-thumb" aria-hidden="true"></div>
+            <button type="button" class="segmented-option is-active" data-shape="rectangle">
+              <svg class="segmented-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <rect x="1" y="3.5" width="12" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+              </svg>
+              Rectangle
+            </button>
+            <button type="button" class="segmented-option" data-shape="square">
+              <svg class="segmented-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+              </svg>
+              Square
+            </button>
           </div>
-          <p class="upload-drop-hint">Drop your image here</p>
         </div>
-      </div>
-      <div class="field">
-        <label>Image Shape</label>
-        <div id="rectShapeSegmented2" class="segmented" role="group" aria-label="Image 2 shape">
-          <div class="segmented-thumb" aria-hidden="true"></div>
-          <button type="button" class="segmented-option is-active" data-shape="rectangle">
-            <svg class="segmented-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <rect x="1" y="3.5" width="12" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-            </svg>
-            Rectangle
-          </button>
-          <button type="button" class="segmented-option" data-shape="square">
-            <svg class="segmented-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <rect x="2" y="2" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-            </svg>
-            Square
-          </button>
+        <div class="field">
+          <label for="rectSizeSlider2">Size</label>
+          <div class="row">
+            <input id="rectSizeSlider2" type="range" min="250" max="750" step="1" value="300">
+            <input id="rectSizeNumber2" class="size-number" type="number" min="250" max="750" step="1" value="300">
+            <button id="rectSizeReset2" class="reset-btn" type="button">Reset</button>
+          </div>
         </div>
-      </div>
-      <div class="field">
-        <label for="rectSizeSlider2">Size</label>
-        <div class="row">
-          <input id="rectSizeSlider2" type="range" min="250" max="750" step="1" value="300">
-          <input id="rectSizeNumber2" class="size-number" type="number" min="250" max="750" step="1" value="300">
-          <button id="rectSizeReset2" class="reset-btn" type="button">Reset</button>
+        <div class="field">
+          <label for="rectRadiusSlider2">Corner Radius</label>
+          <div class="row">
+            <input id="rectRadiusSlider2" type="range" min="0" max="150" step="1" value="26">
+            <input id="rectRadiusNumber2" class="size-number" type="number" min="0" max="150" step="1" value="26">
+            <button id="rectRadiusReset2" class="reset-btn" type="button">Reset</button>
+          </div>
         </div>
-      </div>
-      <div class="field">
-        <label for="rectRadiusSlider2">Corner Radius</label>
-        <div class="row">
-          <input id="rectRadiusSlider2" type="range" min="0" max="150" step="1" value="26">
-          <input id="rectRadiusNumber2" class="size-number" type="number" min="0" max="150" step="1" value="26">
-          <button id="rectRadiusReset2" class="reset-btn" type="button">Reset</button>
-        </div>
-      </div>
-      <div class="field">
-        <label for="rectRotation2">Rotation <span id="rectRotationValue2">-12°</span></label>
-        <div class="row">
-          <input id="rectRotation2" type="range" min="-20" max="20" step="1" value="-12">
-          <button id="rectRotationReset2" class="reset-btn" type="button">Reset</button>
+        <div class="field">
+          <label for="rectRotation2">Rotation <span id="rectRotationValue2">-12°</span></label>
+          <div class="row">
+            <input id="rectRotation2" type="range" min="-20" max="20" step="1" value="-12">
+            <button id="rectRotationReset2" class="reset-btn" type="button">Reset</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1142,7 +1199,9 @@ Magazine</textarea>
       try {
         alreadySeen = localStorage.getItem(SEEN_KEY) === "true";
       } catch (e) {}
-      if (!alreadySeen) open();
+      const browserWarning = document.getElementById("browserWarningModal");
+      const browserWarningShown = browserWarning && !browserWarning.hidden;
+      if (!alreadySeen && !browserWarningShown) open();
     })();
   </script>
   <main class="stage">
@@ -1283,6 +1342,11 @@ Magazine</textarea>
       if (!btn) return;
       btn.textContent = `${enabled ? "Hide" : "Show"} ${btn.dataset.label}`;
       btn.setAttribute("aria-pressed", String(enabled));
+      btn.classList.toggle("is-hide-state", enabled);
+      btn.classList.toggle("is-show-state", !enabled);
+      const suffix = btn.id.replace("rectEnabled", "");
+      const settings = document.getElementById("rectSettings" + suffix);
+      if (settings) settings.hidden = !enabled;
     }
 
     window.addEventListener("resize", () => {
